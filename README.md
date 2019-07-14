@@ -2,16 +2,18 @@
 
 [![Docker Repository on Quay](https://quay.io/repository/pichuang/debug-container/status "Docker Repository on Quay")](https://quay.io/repository/pichuang/debug-container)
 
-This container can be thought of as the administrator’s shell. Many of the debugging tools (such as strace, traceroute, and mtr) and man pages that an administrator might use to diagnose problems on the host are in this container.
+This container can be thought of as the administrator’s shell. Many of the debugging tools (such as ping, traceroute, and mtr) and man pages that an administrator might use to diagnose problems on the host are in this container.
 
 - Networking-related commands:
   - [x] iproute
   - [x] net-tools
   - [x] mtr
   - [x] dig
-- Generic-related commands:
+  - [x] ping
+- Generic commands:
   - [x] vim
   - [x] git
+  - [x] htop
 
 ## Download
 ```
@@ -49,10 +51,10 @@ oc run ocp-debug-container --image=quay.io/pichuang/debug-container \
 oc project <PROJECT NAME>
 oc run ocp-debug-container --image=quay.io/pichuang/debug-container \
    --restart=Never --attach -i --tty --rm \
-   --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"<key>":"<value>"}}}'
+   --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"<KEY>":"<VALUE>"}}}'
 ```
 - Remind: Please replace `<key>:<value>`
 
 ## Author
-* **Phil Huang** <phil.huang@redhat.com> [Phil Workspace](https://blog.pichuang.com.tw)
+* **Phil Huang** <phil.huang@redhat.com> - [Phil Workspace](https://blog.pichuang.com.tw)
 
