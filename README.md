@@ -35,7 +35,7 @@ docker run -it --rm --name debug --privileged \
        quay.io/pichuang/debug-container
 ```
 
-## How to use it on Red Hat OpenShift v3?
+## How to use `debug-container` on Red Hat OpenShift v3?
 
 1. Running one Pod in project and `any node`
 ```
@@ -54,5 +54,5 @@ oc run ocp-debug-container --image=quay.io/pichuang/debug-container \
 - Remind: Please replace `<key>:<value>`
 
 ## Author
-* **Phil Huang** - [Phil Workspace](https://blog.pichuang.com.tw)
+* **Phil Huang** <phil.huang@redhat.com> [Phil Workspace](https://blog.pichuang.com.tw)
 
