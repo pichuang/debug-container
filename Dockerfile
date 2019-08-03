@@ -1,6 +1,7 @@
 FROM library/centos:7.6.1810
 MAINTAINER Phil Huang <phil.huang@redhat.com>
 
+# Install packages
 RUN yum -y install epel-release && \
     rpmkeys --import file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 && \
     yum -y update && \
@@ -16,4 +17,8 @@ RUN yum -y install epel-release && \
         ethtool && \
     yum -y clean all
 
-CMD ["/bin/bash"]
+# Set motd
+ADD motd /etc/motd
+RUN echo "cat /etc/motd" >> ~/.bashrc
+
+CMD ["/bin/bash", "-l"]
