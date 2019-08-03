@@ -55,6 +55,18 @@ oc run ocp-debug-container --image=quay.io/pichuang/debug-container \
 ```
 - Remind: Please replace `<key>:<value>`
 
+## How to build the container images?
+- If you choose buildah...
+```
+make build-buildah
+```
+
+- If you choose docker...
+```
+make build-docker
+```
+
+
 ## Author
-* **Phil Huang** <phil.huang@redhat.com> - [Phil Workspace](https://blog.pichuang.com.tw)
+* **Phil Huang** <phil.huang@redhat.com>
 
