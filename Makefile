@@ -3,20 +3,41 @@ IMAGE_NAME=debug-container
 IMAGE_TAG=20190804
 CONTAINER_NAME=debug-container
 
-help:  ## Display help information
-                @awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+.DEFAULT_GOAL:=help
+SHELL:=/bin/bash
 
-build-buildah: # Build OCI container with Buildah
+.PHONY: help build-buildah run-podman run-podman-mix build-docker run-docker run-docker-mix
+
+help: ## Display help information
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+
+build-buildah: ## Build OCI image with Buildah
 	buildah bud -t $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) .
 	buildah images
 
-run-podman: # Run OCI Image
+run-podman: ## Run Independent OCI Image
 	podman run --rm -it --name $(CONTAINER_NAME) $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
 
-build-docker: # Build the container with Docker
+run-podman-mix: ## Run Mixed OCI Image
+	podman run -it --rm --name $(CONTAINER_NAME) --privileged \
+       --ipc=host --net=host --pid=host -e HOST=/host \
+       -e NAME=$(CONTAINER_NAME) -e IMAGE=$(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) \
+       -v /run:/run -v /var/log:/var/log \
+       -v /etc/localtime:/etc/localtime -v /:/host \
+       $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
+
+build-docker: ## Build Docker image with Docker
 	docker build -t $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) .
 	docker images
 
-run-docker: # Run Docker Image
+run-docker: ## Run Independent Docker Image
 	docker run --rm -it --name $(CONTAINER_NAME) $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
+
+run-docker-mix: ## Run Mixed Docker Image
+	docker run -it --rm --name $(CONTAINER_NAME) --privileged \
+       --ipc=host --net=host --pid=host -e HOST=/host \
+       -e NAME=$(CONTAINER_NAME) -e IMAGE=$(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) \
+       -v /run:/run -v /var/log:/var/log \
+       -v /etc/localtime:/etc/localtime -v /:/host \
+       $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
 
