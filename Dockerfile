@@ -14,6 +14,8 @@ RUN yum -y install epel-release && \
         bind-utils \
         iproute \
         nmap-ncat \
+        wget \
+        curl \
         ethtool && \
     yum -y clean all
 
