@@ -42,7 +42,7 @@ run-docker-mix: ## Run Mixed Docker Image
        $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 inspect-podman: ## Inspect container OCI image
-       skopeo inspect containers-storage:$(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
+	skopeo inspect containers-storage:$(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 inspect-docker: ## Inspect container docker image
-       skopeo inspect docker://$(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
+	skopeo inspect docker://$(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
