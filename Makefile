@@ -1,12 +1,12 @@
 IMAGE_REPO=localhost
 IMAGE_NAME=debug-container
-IMAGE_TAG=20191113
+IMAGE_TAG=20191220
 CONTAINER_NAME=debug-container
 
 .DEFAULT_GOAL:=help
 SHELL:=/bin/bash
 
-.PHONY: help build-buildah run-podman run-podman-mix build-docker run-docker run-docker-mix
+.PHONY: help build-buildah run-podman run-podman-mix build-docker run-docker run-docker-mix inspect-podman inspect-docker
 
 help: ## Display help information
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -41,3 +41,8 @@ run-docker-mix: ## Run Mixed Docker Image
        -v /etc/localtime:/etc/localtime -v /:/host \
        $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
 
+inspect-podman: ## Inspect container OCI image
+       skopeo inspect containers-storage:$(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
+
+inspect-docker: ## Inspect container docker image
+       skopeo inspect docker://$(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
