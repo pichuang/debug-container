@@ -16,6 +16,8 @@ RUN yum -y install epel-release && \
         nmap-ncat \
         wget \
         curl \
+        tcpdump \
+        sysstat \
         ethtool && \
     yum -y clean all
 
