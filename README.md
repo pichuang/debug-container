@@ -22,12 +22,12 @@ docker pull quay.io/pichuang/debug-container
 
 ## How to use `debug-container` on specific hosts?
 
-1. Independent Mode (Container on OS):
+1. Bridge Mode (Container on OS):
 ```
 docker run -it --rm --name debug-container quay.io/pichuang/debug-container
 ```
 
-2. Mixed Mode (Container within OS):
+2. Host Mode (Container within OS):
 ```
 docker run -it --rm --name debug --privileged \
        --ipc=host --net=host --pid=host -e HOST=/host \
@@ -37,23 +37,38 @@ docker run -it --rm --name debug --privileged \
        quay.io/pichuang/debug-container
 ```
 
-## How to use `debug-container` on Red Hat OpenShift v3?
+3. Container Mode (Bridge another container)
+```
+docker run -it --rm --name debug-contaienr --net container:<container_name> quay.io/pichuang/debug-container
+```
 
-1. Running one Pod in project and `any node`
+
+## How to use `debug-container` on Red Hat OpenShift?
+
+1. Namespace Level Debugging: Running one Pod in project and `any node`
 ```
 oc project <PROJECT NAME>
-oc run ocp-debug-container --image=quay.io/pichuang/debug-container \
+oc run ocp-debug-container --image quay.io/pichuang/debug-container \
    --restart=Never --attach -i --tty --rm
 ```
 
-2. Running one Pod in project and `specific node`
+2. Namespace Level Debugging: Running one Pod in project and `specific node`
 ```
 oc project <PROJECT NAME>
-oc run ocp-debug-container --image=quay.io/pichuang/debug-container \
+oc run ocp-debug-container --image quay.io/pichuang/debug-container \
    --restart=Never --attach -i --tty --rm \
-   --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"<KEY>":"<VALUE>"}}}'
+   --overrides='{ "apiVersion": "v1", "spec": { "kubernetes.io/hostname":"compute-1"}}}'
 ```
-- Remind: Please replace `<key>:<value>`
+- Remind: Please replace `kubernetes.io/hostname:<hostname>`
+
+3. Node Level Debugging: Running one Pod on `specific node`
+
+```bash
+oc project <PROJECT NAME>
+oc run ocp-debug-container --image quay.io/pichuang/debug-container \
+  --restart=Never -it --attach --rm \
+  --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"compute-1"}, "hostNetwork": true}}'
+```
 
 ## How to build the container images?
 - If you choose buildah...
