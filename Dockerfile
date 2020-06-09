@@ -1,4 +1,4 @@
-FROM library/centos:7.7.1908
+FROM library/centos:7.8.2003
 MAINTAINER Phil Huang <phil.huang@redhat.com>
 
 # Install packages
