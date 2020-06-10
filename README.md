@@ -10,9 +10,8 @@ This container can be thought of as the administrator’s shell. Many of the deb
   - [x] mtr
   - [x] dig
   - [x] ping
-  - [ ] ethtool
-  - [ ] socat
-  - [ ] nmap-ncat
+  - [x] ethtool
+  - [x] nmap-ncat
 - Generic commands:
   - [x] vim
   - [x] git
