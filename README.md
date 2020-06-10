@@ -10,6 +10,9 @@ This container can be thought of as the administrator’s shell. Many of the deb
   - [x] mtr
   - [x] dig
   - [x] ping
+  - [ ] ethtool
+  - [ ] socat
+  - [ ] nmap-ncat
 - Generic commands:
   - [x] vim
   - [x] git
@@ -68,6 +71,18 @@ oc project <PROJECT NAME>
 oc run ocp-debug-container --image quay.io/pichuang/debug-container \
   --restart=Never -it --attach --rm \
   --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"compute-1"}, "hostNetwork": true}}'
+```
+
+4. Running Container Level Debugging
+```bash
+oc project <PROJECT NAME>
+oc rsh pod/<PDO NAME>
+```
+
+5. Running Pods Level Debugging
+```bash
+oc project <PROJECT NAME>
+oc debug pods/<Pod NAME>
 ```
 
 ## How to build the container images?
