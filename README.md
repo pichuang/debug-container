@@ -1,6 +1,6 @@
 # Debug-Container
 
-[![Docker Repository on Quay](https://quay.io/repository/pichuang/debug-container/status "Docker Repository on Quay")](https://quay.io/repository/pichuang/debug-container)
+[![Docker Repository on Quay](https://quay.io/repository/tw_pichuang/debug-container/status "Docker Repository on Quay")](https://quay.io/repository/tw_pichuang/debug-container)
 
 This container can be thought of as the administrator’s shell. Many of the debugging tools (such as ping, traceroute, and mtr) and man pages that an administrator might use to diagnose problems on the host are in this container.
 
@@ -19,45 +19,64 @@ This container can be thought of as the administrator’s shell. Many of the deb
 
 ## Download
 ```
-docker pull quay.io/pichuang/debug-container
+docker pull quay.io/tw_pichuang/debug-container
 ```
 
 ## How to use `debug-container` on specific hosts?
 
 1. Bridge Mode (Container on OS):
-```
-docker run -it --rm --name debug-container quay.io/pichuang/debug-container
+```bash
+docker run -it --rm --name debug-container quay.io/tw_pichuang/debug-container
 ```
 
 2. Host Mode (Container within OS):
-```
+```bash
 docker run -it --rm --name debug --privileged \
        --ipc=host --net=host --pid=host -e HOST=/host \
        -e NAME=debug-container -e IMAGE=pichuang/debug-container \
        -v /run:/run -v /var/log:/var/log \
        -v /etc/localtime:/etc/localtime -v /:/host \
-       quay.io/pichuang/debug-container
+       quay.io/tw_pichuang/debug-container
 ```
 
 3. Container Mode (Bridge another container)
 ```
-docker run -it --rm --name debug-contaienr --net container:<container_name> quay.io/pichuang/debug-container
+docker run -it --rm --name debug-contaienr --net container:<container_name> quay.io/tw_pichuang/debug-container
+```
+
+## How to use `debug-container` on native Kubernetes or Tanzu Kubernetes Grid Cluster?
+
+1. Namespace Level Debugging: Running one Pod in project and `any node`
+```bash
+kubectl run -n default debug-container --restart=Never --rm -i --tty --image quay.io/tw_pichuang/debug-container -- /bin/bash
+```
+
+2. Namespace Level Debugging: Running one Pod in project and `specific node`
+```bash
+kubectl run -n default debug-container --restart=Never --rm -i --tty --overrides='{ "apiVersion": "v1", "spec": {"kubernetes.io/hostname":"tce-local-control-plane"}}' --image quay.io/tw_pichuang/debug-container -- /bin/bash
+```
+
+3. Node Level Debugging: Running one Pod on `specific node`
+```bash
+kubectl run -n default ocp-debug-container --image quay.io/tw_pichuang/debug-container \
+  --restart=Never -it --attach --rm \
+  --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"tce-local-control-plane"}, "hostNetwork": true}}' -- /bin/bash
 ```
 
 
 ## How to use `debug-container` on Red Hat OpenShift?
 
 1. Namespace Level Debugging: Running one Pod in project and `any node`
-```
+```bash
 oc project <PROJECT NAME>
-oc run ocp-debug-container --image quay.io/pichuang/debug-container \
+oc run ocp-debug-container --image quay.io/tw_pichuang/debug-container \
    --restart=Never --attach -i --tty --rm
 ```
 
 2. Namespace Level Debugging: Running one Pod in project and `specific node`
-```
+```bash
 oc project <PROJECT NAME>
-oc run ocp-debug-container --image quay.io/pichuang/debug-container \
+oc run ocp-debug-container --image quay.io/tw_pichuang/debug-container \
    --restart=Never --attach -i --tty --rm \
    --overrides='{ "apiVersion": "v1", "spec": { "kubernetes.io/hostname":"compute-1"}}}'
 ```
@@ -67,7 +86,7 @@ oc run ocp-debug-container --image quay.io/pichuang/debug-container \
 
 ```bash
 oc project <PROJECT NAME>
-oc run ocp-debug-container --image quay.io/pichuang/debug-container \
+oc run ocp-debug-container --image quay.io/tw_pichuang/debug-container \
   --restart=Never -it --attach --rm \
   --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"compute-1"}, "hostNetwork": true}}'
 ```
@@ -97,5 +116,5 @@ make build-docker
 
 
 ## Author
-* **Phil Huang** <phil.huang@redhat.com>
+* **Phil Huang** <hphil@vmware.com>
 
