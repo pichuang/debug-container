@@ -1,5 +1,5 @@
 FROM docker.io/library/centos:7.9.2009
-MAINTAINER Phil Huang <phil.huang@redhat.com>
+MAINTAINER Phil Huang <hphil@vmware.com>
 
 # Install packages
 RUN yum -y install epel-release && \
