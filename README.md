@@ -44,23 +44,31 @@ docker run -it --rm --name debug --privileged \
 docker run -it --rm --name debug-contaienr --net container:<container_name> quay.io/tw_pichuang/debug-container
 ```
 
-## How to use `debug-container` on native Kubernetes or Tanzu Kubernetes Grid Cluster?
+## How to use `debug-container` on Native Kubernetes/Tanzu Kubernetes Grid Cluster/Azure Kubernetes Service?
 
-1. Namespace Level Debugging: Running one Pod in project and `any node`
+1. Namespace Level Debugging: Running one Pod in namespace and `any node`
 ```bash
 kubectl run -n default debug-container --restart=Never --rm -i --tty --image quay.io/tw_pichuang/debug-container -- /bin/bash
 ```
 
-2. Namespace Level Debugging: Running one Pod in project and `specific node`
+2. Namespace Level Debugging: Running one Pod in namespace and `specific node`
 ```bash
-kubectl run -n default debug-container --restart=Never --rm -i --tty --overrides='{ "apiVersion": "v1", "spec": {"kubernetes.io/hostname":"tce-local-control-plane"}}' --image quay.io/tw_pichuang/debug-container -- /bin/bash
+# Show all of nodes
+kubectl get nodes
+NAME                                STATUS   ROLES   AGE   VERSION
+aks-agentpool-40137516-vmss000000   Ready    agent   82m   v1.22.11
+aks-agentpool-40137516-vmss000001   Ready    agent   82m   v1.22.11
+aks-agentpool-40137516-vmss000002   Ready    agent   82m   v1.22.11
+
+# Run the command
+kubectl run -n default debug-container --restart=Never --rm -i --tty --overrides='{ "apiVersion": "v1", "spec": {"kubernetes.io/hostname":"aks-agentpool-40137516-vmss000002"}}' --image quay.io/tw_pichuang/debug-container -- /bin/bash
 ```
 
 3. Node Level Debugging: Running one Pod on `specific node`
 ```bash
 kubectl run -n default ocp-debug-container --image quay.io/tw_pichuang/debug-container \
   --restart=Never -it --attach --rm \
-  --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"tce-local-control-plane"}, "hostNetwork": true}}' -- /bin/bash
+  --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"aks-agentpool-40137516-vmss000002"}, "hostNetwork": true}}' -- /bin/bash
 ```
 
 
@@ -116,5 +124,5 @@ make build-docker
 
 
 ## Author
-* **Phil Huang** <hphil@vmware.com>
+* **Phil Huang** <phil.huang@microsoft.com>
 
