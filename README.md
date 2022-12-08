@@ -66,7 +66,7 @@ kubectl run -n default debug-container --restart=Never --rm -i --tty --overrides
 
 3. Node Level Debugging: Running one Pod on `specific node`
 ```bash
-kubectl run -n default ocp-debug-container --image quay.io/tw_pichuang/debug-container \
+kubectl run -n default debug-container --image quay.io/tw_pichuang/debug-container \
   --restart=Never -it --attach --rm \
   --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"aks-agentpool-40137516-vmss000002"}, "hostNetwork": true}}' -- /bin/bash
 ```
