@@ -111,6 +111,23 @@ oc project <PROJECT NAME>
 oc debug pods/<Pod NAME>
 ```
 
+## How to Import YAML?
+
+```bash
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ocp-debug-container
+spec:
+  containers:
+  - image: quay.io/tw_pichuang/debug-container
+    name: ocp-debug-container
+    command: [ "/bin/bash", "-c", "--" ]
+    args: [ "while true; do sleep 30; done;" ]
+```
+
+
 ## How to build the container images?
 - If you choose buildah...
 ```
