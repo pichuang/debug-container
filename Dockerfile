@@ -22,7 +22,7 @@ RUN yum -y install epel-release && \
     yum -y clean all
 
 # Set motd
-ADD motd /etc/motd
+COPY motd /etc/motd
 RUN echo "cat /etc/motd" >> ~/.bashrc
 
 CMD ["/bin/bash", "-l"]
