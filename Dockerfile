@@ -1,4 +1,4 @@
-FROM docker.io/library/centos:7.9.2009
+FROM quay.io/centos/centos:stream8
 LABEL org.opencontainers.image.authors="Phil Huang <phil.huang@microsoft.com>"
 
 # Install packages
