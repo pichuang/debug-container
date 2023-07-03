@@ -3,7 +3,7 @@ LABEL org.opencontainers.image.authors="Phil Huang <phil.huang@microsoft.com>"
 
 # Install packages
 RUN yum -y install epel-release && \
-    rpmkeys --import file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7 && \
+    rpmkeys --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8 && \
     yum -y update && \
     yum -y install \
         mtr \
