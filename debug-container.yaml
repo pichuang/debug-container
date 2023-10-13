@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-container
+spec:
+  containers:
+  - image: ghcr.io/pichuang/debug-container:master
+    name: debug-container
+    command: [ "/bin/bash", "-c", "--" ]
+    args: [ "while true; do sleep 30; done;" ]
