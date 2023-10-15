@@ -20,6 +20,8 @@ RUN yum -y install epel-release && \
         curl \
         tcpdump \
         sysstat \
+        numactl \
+        hping3 \
         ethtool && \
     yum -y clean all
 
