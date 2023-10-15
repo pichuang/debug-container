@@ -69,6 +69,14 @@ kubectl run -n default debug-container --restart=Never --rm -i --tty --overrides
 kubectl run -n default debug-container --image ghcr.io/pichuang/debug-container:master \
   --restart=Never -it --attach --rm \
   --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"aks-agentpool-40137516-vmss000002"}, "hostNetwork": true}}' -- /bin/bash
+
+# or
+$ kubectl debug node/aks-agentpool-40137516-vmss000002 -it --image=ghcr.io/pichuang/debug-container:master -- /bin/bash
+Creating debugging pod node-debugger-aks-agentpool-40137516-vmss000002-psvms with container debugger on node aks-agentpool-40137516-vmss000002.
+If you don't see a command prompt, try pressing enter.
+
+[root@aks-agentpool-14864487-vmss000000 /]# chroot /host /bin/bash
+root [ / ]# cat /etc/os-release | head -n 2
 ```
 
 
