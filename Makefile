@@ -1,6 +1,6 @@
 IMAGE_REPO=localhost
 IMAGE_NAME=debug-container
-IMAGE_TAG=20191220
+IMAGE_TAG=master
 CONTAINER_NAME=debug-container
 
 .DEFAULT_GOAL:=help
