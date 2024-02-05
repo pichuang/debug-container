@@ -13,6 +13,7 @@ RUN yum -y install epel-release && \
     yum -y update && \
     yum -y --allowerasing install \
         python3.11 \
+        python3.11-pip \
         iputils \
         mtr \
         net-tools \
@@ -28,6 +29,10 @@ RUN yum -y install epel-release && \
         sysstat \
         numactl \
         hping3 \
+        dnsperf \
+        jq \
+        speedtest-cli \
+        iperf3 \
         ethtool && \
     yum -y clean all
 
@@ -44,6 +49,8 @@ RUN echo "cat /etc/motd" >> ~/.bashrc
 
 EXPOSE 5566
 
+USER root
 WORKDIR /root
+ENV HOSTNAME debug-container
 
 CMD ["/bin/bash", "-l"]
