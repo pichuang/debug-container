@@ -1,4 +1,4 @@
-FROM quay.io/centos/centos:stream9
+FROM quay.io/centos/centos:stream8
 LABEL org.opencontainers.image.title = "Debug Container" \
       org.opencontainers.image.authors = "Phil Huang <phil.huang@microsoft.com>" \
       org.opencontainers.image.source = "https://github.com/pichuang/debug-container" \
@@ -9,11 +9,10 @@ LABEL org.opencontainers.image.title = "Debug Container" \
 
 # Install packages
 RUN yum -y install epel-release && \
-    rpmkeys --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-9 && \
+    rpmkeys --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8 && \
     yum -y update && \
-    yum -y --allowerasing install \
+    yum -y install \
         python3.11 \
-        iputils \
         mtr \
         net-tools \
         htop \
@@ -35,8 +34,7 @@ RUN git clone https://github.com/upa/deadman.git /root/deadman
 
 RUN rm /root/anaconda-ks.cfg && \
     rm /root/anaconda-post.log && \
-    rm /root/original-ks.cfg && \
-    rm /root/anaconda-post-nochroot.log
+    rm /root/original-ks.cfg
 
 # Set motd
 COPY motd /etc/motd
