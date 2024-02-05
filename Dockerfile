@@ -12,7 +12,7 @@ RUN yum -y install epel-release && \
     rpmkeys --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8 && \
     yum -y update && \
     yum -y install \
-        sudo \
+        python3.11 \
         mtr \
         net-tools \
         htop \
