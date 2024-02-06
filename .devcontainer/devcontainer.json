@@ -9,6 +9,20 @@
 		"dockerfile": "../Dockerfile"
 	},
 
+	"runArgs": [
+		"--privileged"
+	],
+	// "runArgs": [
+	// 	"--cap-add=sys_admin",
+	// 	"--security-opt",
+	// 	"seccomp=unconfined",
+	// 	"--device",
+	// 	"/dev/fuse",
+	// 	"--security-opt",
+	// 	"label=disable",
+	// 	"--security-opt",
+	// 	"apparmor=unconfined"
+	//   ],
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
