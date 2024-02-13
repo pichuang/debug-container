@@ -33,6 +33,7 @@ RUN yum -y install epel-release && \
         jq \
         speedtest-cli \
         iperf3 \
+        procps-ng \
         ethtool && \
     yum -y clean all
 
