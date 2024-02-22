@@ -9,3 +9,6 @@ spec:
     name: debug-container
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "while true; do sleep 30; done;" ]
+    securityContext:
+        runAsUser: root
+        runAsNonRoot: false
