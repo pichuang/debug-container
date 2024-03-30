@@ -34,6 +34,7 @@ RUN yum -y install epel-release && \
         speedtest-cli \
         iperf3 \
         procps-ng \
+        2ping \
         ethtool && \
     yum -y clean all
 
