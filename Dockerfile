@@ -8,6 +8,7 @@ LABEL org.opencontainers.image.title = "Debug Container" \
       org.opencontainers.image.documentation = "https://github.com/pichuang/debug-container"
 
 # Install packages
+# hadolint ignore=DL3033
 RUN yum -y install epel-release && \
     rpmkeys --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-9 && \
     yum -y update && \
@@ -51,6 +52,7 @@ RUN echo "cat /etc/motd" >> ~/.bashrc
 
 EXPOSE 5566
 
+# hadolint ignore=DL3002
 USER root
 WORKDIR /root
 ENV HOSTNAME debug-container
