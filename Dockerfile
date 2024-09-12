@@ -2,13 +2,13 @@
 # check=error=true
 
 FROM quay.io/centos/centos:stream9
-LABEL org.opencontainers.image.title = "Debug Container" \
-      org.opencontainers.image.authors = "Phil Huang <phil.huang@microsoft.com>" \
-      org.opencontainers.image.source = "https://github.com/pichuang/debug-container" \
-      org.opencontainers.image.description = "A short and concise Container Troubleshooting Tool that is updated daily" \
-      org.opencontainers.image.vendor = "divecode.in" \
-      org.opencontainers.image.url = "ghcr.io/pichuang/debug-container:master" \
-      org.opencontainers.image.documentation = "https://github.com/pichuang/debug-container"
+LABEL org.opencontainers.image.title="Debug Container" \
+      org.opencontainers.image.authors="Phil Huang <phil.huang@microsoft.com>" \
+      org.opencontainers.image.source="https://github.com/pichuang/debug-container" \
+      org.opencontainers.image.description="A short and concise Container Troubleshooting Tool that is updated daily" \
+      org.opencontainers.image.vendor="divecode.in" \
+      org.opencontainers.image.url="ghcr.io/pichuang/debug-container:master" \
+      org.opencontainers.image.documentation="https://github.com/pichuang/debug-container"
 
 # Install packages
 # hadolint ignore=DL3033
@@ -58,6 +58,6 @@ EXPOSE 5566
 # hadolint ignore=DL3002
 USER root
 WORKDIR /root
-ENV HOSTNAME debug-container
+ENV HOSTNAME=debug-container
 
 CMD ["/bin/bash", "-l"]
