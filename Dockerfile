@@ -1,3 +1,6 @@
+# syntax=docker.io/docker/dockerfile-upstream:1.9.0
+# check=error=true
+
 FROM quay.io/centos/centos:stream9
 LABEL org.opencontainers.image.title = "Debug Container" \
       org.opencontainers.image.authors = "Phil Huang <phil.huang@microsoft.com>" \
