@@ -10,7 +10,7 @@ LABEL org.opencontainers.image.title="Debug Container" \
       org.opencontainers.image.url="ghcr.io/pichuang/debug-container:master" \
       org.opencontainers.image.documentation="https://github.com/pichuang/debug-container"
 
-# Install packages
+# Install packages and clean up in one layer
 # hadolint ignore=DL3033
 RUN yum -y install epel-release && \
     rpmkeys --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-9 && \
@@ -40,14 +40,12 @@ RUN yum -y install epel-release && \
         procps-ng \
         nmap \
         ethtool && \
-    yum -y clean all
+    yum -y clean all && \
+    rm -rf /var/cache/yum && \
+    rm /root/anaconda-ks.cfg /root/anaconda-post.log /root/original-ks.cfg /root/anaconda-post-nochroot.log
 
+# Clone repository
 RUN git clone https://github.com/upa/deadman.git /root/deadman
-
-RUN rm /root/anaconda-ks.cfg && \
-    rm /root/anaconda-post.log && \
-    rm /root/original-ks.cfg && \
-    rm /root/anaconda-post-nochroot.log
 
 # Set motd
 COPY motd /etc/motd
