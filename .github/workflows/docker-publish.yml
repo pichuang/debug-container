@@ -52,6 +52,7 @@ jobs:
             type=ref,event=tag
             type=schedule
             type=raw,value=v{{date 'YYYYMMDD'}}
+            type=raw,value=latest
 
       - name: Build and push Docker image
         id: build-and-push
