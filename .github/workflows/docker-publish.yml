@@ -2,7 +2,7 @@ name: Docker
 
 on:
   schedule:
-    - cron: '26 8 * * *'
+    - cron: '30 19 * * 0'
   push:
     branches: [ "master" ]
     tags: [ 'v*.*.*' ]
@@ -48,9 +48,6 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=tag
-            type=schedule
             type=raw,value=v{{date 'YYYYMMDD'}}
             type=raw,value=latest
 
