@@ -10,5 +10,5 @@ spec:
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "while true; do sleep 30; done;" ]
     securityContext:
-        runAsUser: root
+        runAsUser: 0
         runAsNonRoot: false
