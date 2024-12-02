@@ -1,0 +1,23 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debug-container
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debug-container
+  template:
+    metadata:
+      labels:
+        app: debug-container
+    spec:
+      containers:
+      - image: ghcr.io/pichuang/debug-container:master
+        name: debug-container
+        command: [ "/bin/bash", "-c", "--" ]
+        args: [ "while true; do sleep 30; done;" ]
+        securityContext:
+          runAsUser: 0
+          runAsNonRoot: false
