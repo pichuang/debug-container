@@ -4,20 +4,25 @@
 
 [![OpenSSF - Scorecard supply-chain security](https://github.com/pichuang/debug-container/actions/workflows/scorecard.yml/badge.svg)](https://github.com/pichuang/debug-container/actions/workflows/scorecard.yml)
 
-This container can be thought of as the administrator’s shell. Many of the debugging tools (such as ping, traceroute, and mtr) and man pages that an administrator might use to diagnose problems on the host are in this container.
+This container can be thought of as the administrator's shell. Many of the debugging tools (such as ping, traceroute, and mtr) and man pages that an administrator might use to diagnose problems on the host are in this container.
 
 - Networking-related commands:
-  - [x] iproute
+  - [x] iproute2
   - [x] net-tools
-  - [x] mtr
-  - [x] dig
-  - [x] ping
+  - [x] mtr-tiny
+  - [x] dnsutils (dig)
+  - [x] iputils-ping
   - [x] ethtool
-  - [x] nmap-ncat
+  - [x] netcat
+  - [x] nmap
+  - [x] tcpdump
+  - [x] curl
 - Generic commands:
   - [x] vim
   - [x] git
   - [x] htop
+  - [x] sudo
+  - [x] tini (proper init process)
 
 ## Download
 ```
@@ -81,7 +86,6 @@ If you don't see a command prompt, try pressing enter.
 root [ / ]# cat /etc/os-release | head -n 2
 ```
 
-
 ## How to use `debug-container` on Red Hat OpenShift?
 
 1. Namespace Level Debugging: Running one Pod in project and `any node`
@@ -137,7 +141,6 @@ spec:
     args: [ "while true; do sleep 30; done;" ]
 ```
 
-
 ## How to build the container images?
 - If you choose buildah...
 ```
@@ -149,6 +152,34 @@ make build-buildah
 make build-docker
 ```
 
+## Security Best Practices
+
+When using debug containers, especially with elevated privileges, consider the following security best practices:
+
+1. **Avoid running privileged containers in production**: The `--privileged` flag gives containers full access to the host, which can be a security risk.
+
+2. **Use non-root users**: The debug container now runs with a non-root user by default. This provides an extra layer of security.
+
+3. **Limit container capabilities**: When possible, specify only the capabilities your container needs rather than running with full privileges.
+
+4. **Time-limit debug sessions**: Always use the `--rm` flag to ensure containers are removed when the session ends.
+
+5. **Restrict volume mounts**: Only mount the volumes necessary for debugging.
+
+6. **Use network isolation**: When possible, use the default bridge network rather than host networking.
+
+7. **Apply resource limits**: Consider setting memory and CPU limits on debug containers.
+
+8. **Monitor container activity**: Keep track of who is using debug containers and monitor their activities.
+
+Example of a more secure debug container run with limited privileges:
+
+```bash
+docker run -it --rm --name debug-container \
+  --cap-add=NET_ADMIN --cap-add=SYS_PTRACE \
+  --security-opt=no-new-privileges \
+  ghcr.io/pichuang/debug-container:master
+```
 
 ## Author
 * **Phil Huang** <phil.huang@microsoft.com>

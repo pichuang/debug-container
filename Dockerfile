@@ -1,7 +1,7 @@
 # syntax=docker.io/docker/dockerfile-upstream:1.9.0
 # check=error=true
 
-FROM quay.io/centos/centos:stream9
+FROM ubuntu:22.04
 LABEL org.opencontainers.image.title="Debug Container" \
       org.opencontainers.image.authors="Phil Huang <phil.huang@microsoft.com>" \
       org.opencontainers.image.source="https://github.com/pichuang/debug-container" \
@@ -10,52 +10,59 @@ LABEL org.opencontainers.image.title="Debug Container" \
       org.opencontainers.image.url="ghcr.io/pichuang/debug-container:master" \
       org.opencontainers.image.documentation="https://github.com/pichuang/debug-container"
 
-# Install packages and clean up in one layer
-# hadolint ignore=DL3033
-RUN yum -y install epel-release && \
-    rpmkeys --import /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-9 && \
-    yum -y update && \
-    yum -y --allowerasing install \
-        python3.11 \
-        python3.11-pip \
-        iputils \
-        mtr \
+# Install core networking and debugging tools in one layer to minimize image size
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        bash \
+        python3 \
+        python3-pip \
+        iputils-ping \
+        mtr-tiny \
         net-tools \
         htop \
         vim \
         git \
-        bind-utils \
-        iproute \
-        nmap-ncat \
+        dnsutils \
+        iproute2 \
+        netcat \
         wget \
         curl \
         tcpdump \
         sysstat \
         numactl \
-        hping3 \
-        dnsperf \
         jq \
-        speedtest-cli \
         iperf3 \
-        procps-ng \
+        procps \
         nmap \
-        ethtool && \
-    yum -y clean all && \
-    rm -rf /var/cache/yum && \
-    rm /root/anaconda-ks.cfg /root/anaconda-post.log /root/original-ks.cfg /root/anaconda-post-nochroot.log
-
-# Clone repository
-RUN git clone https://github.com/upa/deadman.git /root/deadman
+        ethtool \
+        sudo \
+        tini \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set motd
 COPY motd /etc/motd
-RUN echo "cat /etc/motd" >> ~/.bashrc
+
+# Create non-root user
+RUN useradd -ms /bin/bash debuguser && \
+    echo "debuguser ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/debuguser && \
+    chmod 0440 /etc/sudoers.d/debuguser && \
+    echo "cat /etc/motd" >> /home/debuguser/.bashrc
 
 EXPOSE 5566
 
-# hadolint ignore=DL3002
-USER root
-WORKDIR /root
+# Use tini as init to properly handle signals
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+# Switch to non-root user
+USER debuguser
+WORKDIR /home/debuguser
 ENV HOSTNAME=debug-container
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:5566/ || exit 1
 
 CMD ["/bin/bash", "-l"]
