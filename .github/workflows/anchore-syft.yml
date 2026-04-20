@@ -26,14 +26,15 @@ jobs:
       contents: write # required to upload to the Dependency submission API
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - dockerfile: Dockerfile
             image-tag: localbuild/testimage:latest
-            artifact-name: image.spdx.json
+            artifact-name: image-spdx-json
           - dockerfile: Dockerfile-microsoft
             image-tag: localbuild/testimage-microsoft:latest
-            artifact-name: image-microsoft.spdx.json
+            artifact-name: image-microsoft-spdx-json
     steps:
     - name: Checkout the code
       uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
