@@ -1,7 +1,7 @@
 # syntax=docker.io/docker/dockerfile-upstream:1.9.0
 # check=error=true
 
-FROM quay.io/centos/centos:stream9@sha256:7cde3b5531447f15957b18995c56c5e5d2075b3e1fbafb608ca44068b9732caa
+FROM quay.io/centos/centos:stream9@sha256:b99dfd34a0bb6ab79c59d3b2e6d8782bf254eec7a58f5533ce4b1cf8de6c90d0
 LABEL org.opencontainers.image.title="Debug Container" \
       org.opencontainers.image.authors="Phil Huang <phil.huang@microsoft.com>" \
       org.opencontainers.image.source="https://github.com/pichuang/debug-container" \
