@@ -1,0 +1,1 @@
+Follow Dockerfile best pratices and use multi-stage builds to keep the image size small.

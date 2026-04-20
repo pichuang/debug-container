@@ -6,7 +6,7 @@ CONTAINER_NAME=debug-container
 .DEFAULT_GOAL:=help
 SHELL:=/bin/bash
 
-.PHONY: help build-buildah run-podman run-podman-mix build-docker run-docker run-docker-mix inspect-podman inspect-docker
+.PHONY: help build-buildah run-podman run-podman-mix build-docker run-docker run-docker-mix build-docker-microsoft run-docker-microsoft inspect-podman inspect-docker
 
 help: ## Display help information
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -30,8 +30,15 @@ build-docker: ## Build Docker image with Docker
 	docker build -t $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) .
 	docker images
 
+build-docker-microsoft: ## Build Docker image with Azure Linux (Microsoft Supported)
+	docker build -f Dockerfile-microsoft -t $(IMAGE_REPO)/$(IMAGE_NAME):microsoft .
+	docker images
+
 run-docker: ## Run Independent Docker Image
 	docker run --rm -it --name $(CONTAINER_NAME) $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
+
+run-docker-microsoft: ## Run Independent Docker Image (Microsoft)
+	docker run --rm -it --name $(CONTAINER_NAME)-microsoft $(IMAGE_REPO)/$(IMAGE_NAME):microsoft
 
 run-docker-mix: ## Run Mixed Docker Image
 	docker run -it --rm --name $(CONTAINER_NAME) --privileged \

@@ -25,14 +25,23 @@ jobs:
     permissions:
       contents: write # required to upload to the Dependency submission API
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - dockerfile: Dockerfile
+            image-tag: localbuild/testimage:latest
+            artifact-name: image.spdx.json
+          - dockerfile: Dockerfile-microsoft
+            image-tag: localbuild/testimage-microsoft:latest
+            artifact-name: image-microsoft.spdx.json
     steps:
     - name: Checkout the code
-      uses: actions/checkout@v3
+      uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag localbuild/testimage:latest
+      run: docker build . --file ${{ matrix.dockerfile }} --tag ${{ matrix.image-tag }}
     - name: Scan the image and upload dependency results
       uses: anchore/sbom-action@bb716408e75840bbb01e839347cd213767269d4a
       with:
-        image: "localbuild/testimage:latest"
-        artifact-name: image.spdx.json
+        image: "${{ matrix.image-tag }}"
+        artifact-name: ${{ matrix.artifact-name }}
         dependency-snapshot: true

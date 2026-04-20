@@ -1,7 +1,7 @@
 # syntax=docker.io/docker/dockerfile-upstream:1.9.0
 # check=error=true
 
-FROM quay.io/centos/centos:stream9
+FROM quay.io/centos/centos:stream9@sha256:7cde3b5531447f15957b18995c56c5e5d2075b3e1fbafb608ca44068b9732caa
 LABEL org.opencontainers.image.title="Debug Container" \
       org.opencontainers.image.authors="Phil Huang <phil.huang@microsoft.com>" \
       org.opencontainers.image.source="https://github.com/pichuang/debug-container" \
@@ -44,14 +44,19 @@ RUN yum -y install epel-release && \
     rm -rf /var/cache/yum && \
     rm /root/anaconda-ks.cfg /root/anaconda-post.log /root/original-ks.cfg /root/anaconda-post-nochroot.log
 
-# Clone repository
-RUN git clone https://github.com/upa/deadman.git /root/deadman
+# Clone repository (pinned to specific commit for supply chain security)
+RUN git clone https://github.com/upa/deadman.git /root/deadman && \
+    cd /root/deadman && \
+    git checkout 4746fd6aae3625b44e19cb3cac566e0544c04dc9
 
 # Set motd
 COPY motd /etc/motd
 RUN echo "cat /etc/motd" >> ~/.bashrc
 
 EXPOSE 5566
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD ["bash", "-c", "echo healthy || exit 1"]
 
 # hadolint ignore=DL3002
 USER root

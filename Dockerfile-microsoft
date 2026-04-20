@@ -1,0 +1,81 @@
+# syntax=docker.io/docker/dockerfile-upstream:1.9.0
+# check=error=true
+
+# Configurable tdnf package repository base URL
+# Override with --build-arg to use an internal mirror, e.g.:
+#   --build-arg PACKAGE_REPO_URL=https://internal.example.com/azurelinux
+ARG PACKAGE_REPO_URL=https://packages.microsoft.com/azurelinux
+
+# Stage 1: Clone repositories
+FROM mcr.microsoft.com/azurelinux/base/core:3.0@sha256:35149ae8dd179684f969944f54a337c665a64e702486154eb44253fb39c2505b AS builder
+ARG PACKAGE_REPO_URL
+RUN if [ "${PACKAGE_REPO_URL}" != "https://packages.microsoft.com/azurelinux" ]; then \
+        sed -i "s|https://packages.microsoft.com/azurelinux|${PACKAGE_REPO_URL}|g" /etc/yum.repos.d/*.repo; \
+    fi && \
+    tdnf install -y git ca-certificates && \
+    tdnf clean all
+RUN git clone https://github.com/upa/deadman.git /tmp/deadman && \
+    cd /tmp/deadman && \
+    git checkout 4746fd6aae3625b44e19cb3cac566e0544c04dc9
+
+# Stage 2: Final image
+FROM mcr.microsoft.com/azurelinux/base/core:3.0@sha256:35149ae8dd179684f969944f54a337c665a64e702486154eb44253fb39c2505b
+LABEL org.opencontainers.image.title="Debug Container (Microsoft)" \
+      org.opencontainers.image.authors="Phil Huang <phil.huang@microsoft.com>" \
+      org.opencontainers.image.source="https://github.com/pichuang/debug-container" \
+      org.opencontainers.image.description="A short and concise Container Troubleshooting Tool based on Azure Linux 3.0 (Microsoft Supported)" \
+      org.opencontainers.image.vendor="divecode.in" \
+      org.opencontainers.image.url="ghcr.io/pichuang/debug-container:microsoft" \
+      org.opencontainers.image.documentation="https://github.com/pichuang/debug-container" \
+      org.opencontainers.image.base.name="mcr.microsoft.com/azurelinux/base/core:3.0"
+
+# Install packages and clean up in one layer
+# Note: hping3, dnsperf are not available in Azure Linux repositories
+# Note: speedtest-cli is installed via pip
+ARG PACKAGE_REPO_URL
+RUN if [ "${PACKAGE_REPO_URL}" != "https://packages.microsoft.com/azurelinux" ]; then \
+        sed -i "s|https://packages.microsoft.com/azurelinux|${PACKAGE_REPO_URL}|g" /etc/yum.repos.d/*.repo; \
+    fi && \
+    tdnf install -y \
+        python3 \
+        python3-pip \
+        iputils \
+        mtr \
+        net-tools \
+        htop \
+        vim \
+        git \
+        bind-utils \
+        iproute \
+        nmap \
+        wget \
+        curl \
+        tcpdump \
+        sysstat \
+        numactl \
+        jq \
+        iperf3 \
+        procps-ng \
+        ethtool \
+        ca-certificates && \
+    tdnf clean all && \
+    pip3 install --no-cache-dir speedtest-cli==2.1.3
+
+# Copy deadman from builder stage
+COPY --from=builder /tmp/deadman /root/deadman
+
+# Set motd
+COPY motd /etc/motd
+RUN echo "cat /etc/motd" >> ~/.bashrc
+
+EXPOSE 5566
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD ["bash", "-c", "echo healthy || exit 1"]
+
+# hadolint ignore=DL3002
+USER root
+WORKDIR /root
+ENV HOSTNAME=debug-container
+
+CMD ["/bin/bash", "-l"]

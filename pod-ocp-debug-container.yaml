@@ -4,7 +4,23 @@ metadata:
   name: ocp-debug-container
 spec:
   containers:
-  - image: quay.io/tw_pichuang/debug-container
+  - image: quay.io/tw_pichuang/debug-container:latest
     name: ocp-debug-container
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "while true; do sleep 30; done;" ]
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    securityContext:
+      runAsNonRoot: false
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+        add:
+          - NET_RAW
+          - NET_ADMIN
