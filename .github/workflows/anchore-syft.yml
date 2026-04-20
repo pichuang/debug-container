@@ -41,7 +41,7 @@ jobs:
     - name: Build the Docker image
       run: docker build . --file ${{ matrix.dockerfile }} --tag ${{ matrix.image-tag }}
     - name: Scan the image and upload dependency results
-      uses: anchore/sbom-action@bb716408e75840bbb01e839347cd213767269d4a
+      uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
       with:
         image: "${{ matrix.image-tag }}"
         artifact-name: ${{ matrix.artifact-name }}
