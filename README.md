@@ -3,25 +3,55 @@
 [![Docker Repository on Quay](https://quay.io/repository/tw_pichuang/debug-container/status "Docker Repository on Quay")](https://quay.io/repository/tw_pichuang/debug-container)
 
 [![OpenSSF - Scorecard supply-chain security](https://github.com/pichuang/debug-container/actions/workflows/scorecard.yml/badge.svg)](https://github.com/pichuang/debug-container/actions/workflows/scorecard.yml)
+[![Docker](https://github.com/pichuang/debug-container/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/pichuang/debug-container/actions/workflows/docker-publish.yml)
 
-This container can be thought of as the administrator’s shell. Many of the debugging tools (such as ping, traceroute, and mtr) and man pages that an administrator might use to diagnose problems on the host are in this container.
+This container can be thought of as the administrator's shell. Many of the debugging tools (such as ping, traceroute, and mtr) and man pages that an administrator might use to diagnose problems on the host are in this container.
 
-- Networking-related commands:
+## Container Image Variants
+
+| Variant | Base Image | Tag | Support |
+|---|---|---|---|
+| **CentOS Stream 9** | `quay.io/centos/centos:stream9` | `master` / `latest` | Community |
+| **Azure Linux 3.0 (Microsoft)** | `mcr.microsoft.com/azurelinux/base/core:3.0` | `microsoft` | Microsoft |
+
+> **Recommended**: Use the `microsoft` variant (`Dockerfile-microsoft`) for production workloads requiring Microsoft support.
+
+## Included Tools
+
+- Networking:
   - [x] iproute
   - [x] net-tools
   - [x] mtr
-  - [x] dig
-  - [x] ping
+  - [x] dig (bind-utils)
+  - [x] ping (iputils)
   - [x] ethtool
-  - [x] nmap-ncat
-- Generic commands:
+  - [x] nmap / nmap-ncat
+  - [x] tcpdump
+  - [x] iperf3
+  - [x] curl / wget
+- Monitoring:
+  - [x] htop
+  - [x] sysstat
+  - [x] numactl
+  - [x] procps-ng
+- General:
   - [x] vim
   - [x] git
-  - [x] htop
+  - [x] jq
+  - [x] python3 / pip3
+  - [x] speedtest-cli
+- CentOS Stream 9 only:
+  - [x] hping3
+  - [x] dnsperf
 
 ## Download
-```
+
+```bash
+# CentOS Stream 9 (default)
 docker pull ghcr.io/pichuang/debug-container:master
+
+# Azure Linux 3.0 (Microsoft Supported)
+docker pull ghcr.io/pichuang/debug-container:microsoft
 ```
 
 ## How to use `debug-container` on specific hosts?
@@ -42,8 +72,8 @@ docker run -it --rm --name debug --privileged \
 ```
 
 3. Container Mode (Bridge another container)
-```
-docker run -it --rm --name debug-contaienr --net container:<container_name> ghcr.io/pichuang/debug-container:master
+```bash
+docker run -it --rm --name debug-container --net container:<container_name> ghcr.io/pichuang/debug-container:master
 ```
 
 ## How to use `debug-container` on Native Kubernetes/Tanzu Kubernetes Grid Cluster/Azure Kubernetes Service?
@@ -81,6 +111,10 @@ If you don't see a command prompt, try pressing enter.
 root [ / ]# cat /etc/os-release | head -n 2
 ```
 
+4. Deploy as a Deployment
+```bash
+kubectl apply -f deployment-debug-container.yaml
+```
 
 ## How to use `debug-container` on Red Hat OpenShift?
 
@@ -123,32 +157,72 @@ oc debug pods/<Pod NAME>
 
 ## How to Import YAML?
 
-```bash
+```yaml
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: ocp-debug-container
+  name: debug-container
 spec:
   containers:
   - image: ghcr.io/pichuang/debug-container:master
-    name: ocp-debug-container
+    name: debug-container
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "while true; do sleep 30; done;" ]
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    securityContext:
+      runAsUser: 0
+      runAsNonRoot: false
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+        add:
+          - NET_RAW
+          - NET_ADMIN
 ```
 
 
 ## How to build the container images?
-- If you choose buildah...
-```
-make build-buildah
-```
 
-- If you choose docker...
-```
+- CentOS Stream 9 (default):
+```bash
 make build-docker
 ```
 
+- Azure Linux 3.0 (Microsoft Supported):
+```bash
+make build-docker-microsoft
+```
+
+- Azure Linux 3.0 with internal package mirror:
+```bash
+docker build -f Dockerfile-microsoft \
+  --build-arg PACKAGE_REPO_URL=https://internal.example.com/azurelinux \
+  -t debug-container:microsoft .
+```
+
+- If you choose buildah...
+```bash
+make build-buildah
+```
+
+## Security
+
+- Base images pinned with SHA256 digest
+- Git dependencies pinned to specific commits
+- pip packages pinned to exact versions
+- All CI workflow actions pinned to commit SHA
+- Container images signed with [cosign](https://github.com/sigstore/cosign)
+- SBOM generated with [Anchore Syft](https://github.com/anchore/syft)
+- Vulnerability scanning with [Snyk](https://snyk.io/)
+- Supply chain security assessed with [OpenSSF Scorecard](https://securityscorecards.dev/)
 
 ## Author
 * **Phil Huang** <phil.huang@microsoft.com>
