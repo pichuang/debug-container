@@ -58,6 +58,6 @@ jobs:
         image: ${{ matrix.image }}
         args: --file=${{ matrix.dockerfile }}
     - name: Upload result to GitHub Code Scanning
-      uses: github/codeql-action/upload-sarif@b2f9ef845756500b97acbdaf5c1dd4e9c1d15734 # v3.35.2
+      uses: github/codeql-action/upload-sarif@0b7b740d4cd9b44f80c907b666497564df09d1d9 # v3.35.2
       with:
         sarif_file: snyk.sarif
