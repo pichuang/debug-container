@@ -7,7 +7,7 @@
 ARG PACKAGE_REPO_URL=https://packages.microsoft.com/azurelinux
 
 # Stage 1: Clone repositories
-FROM mcr.microsoft.com/azurelinux/base/core:3.0@sha256:35149ae8dd179684f969944f54a337c665a64e702486154eb44253fb39c2505b AS builder
+FROM mcr.microsoft.com/azurelinux/base/core:3.0@sha256:82e37ddcf271af1b720036697d8ab8c95f7001c3eaf7694a9ca17b35d84085de AS builder
 ARG PACKAGE_REPO_URL
 RUN if [ "${PACKAGE_REPO_URL}" != "https://packages.microsoft.com/azurelinux" ]; then \
         sed -i "s|https://packages.microsoft.com/azurelinux|${PACKAGE_REPO_URL}|g" /etc/yum.repos.d/*.repo; \
@@ -19,7 +19,7 @@ RUN git clone https://github.com/upa/deadman.git /tmp/deadman && \
     git checkout 4746fd6aae3625b44e19cb3cac566e0544c04dc9
 
 # Stage 2: Final image
-FROM mcr.microsoft.com/azurelinux/base/core:3.0@sha256:35149ae8dd179684f969944f54a337c665a64e702486154eb44253fb39c2505b
+FROM mcr.microsoft.com/azurelinux/base/core:3.0@sha256:82e37ddcf271af1b720036697d8ab8c95f7001c3eaf7694a9ca17b35d84085de
 LABEL org.opencontainers.image.title="Debug Container (Microsoft)" \
       org.opencontainers.image.authors="Phil Huang <phil.huang@microsoft.com>" \
       org.opencontainers.image.source="https://github.com/pichuang/debug-container" \
