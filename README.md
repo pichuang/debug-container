@@ -47,6 +47,10 @@ custom image and its additional tools is not implied by the base image's support
 
 ## Download
 
+Both image variants support **Linux ARM64** (`linux/arm64`) and **Linux x86-64**
+(`linux/amd64`). The same GHCR tag serves both architectures; Docker selects the
+matching image automatically. For 32-bit x86 (`linux/386`), no image is published.
+
 ```bash
 # CentOS Stream 9 (default)
 docker pull ghcr.io/pichuang/debug-container:master
@@ -215,11 +219,26 @@ make build-buildah
 ```
 
 Both Dockerfiles use multi-stage builds to exclude deadman's Git history from
-the final image. CI builds both variants for `linux/amd64` and `linux/arm64`.
-Publishing runs on pushes to `master`, version tags, and the weekly schedule;
-pull requests build without publishing. CentOS uses `master` / `latest` and
+the final image. CI builds and runs both variants on native `amd64` and `arm64`
+runners before publishing. Publishing runs on pushes to `master`, version tags,
+and the weekly schedule; pull requests verify without publishing.
+CentOS uses `master` / `latest` and
 dated `vYYYYMMDD` tags; Azure Linux uses `microsoft` / `microsoft-latest` and
 dated `vYYYYMMDD-microsoft` tags.
+
+Push a `test-publish/*` branch to run the same checks and publish signed
+`test-<run-id>-<attempt>-centos` and `test-<run-id>-<attempt>-microsoft` tags
+without updating any stable tags.
+
+To build for a specific architecture locally, use Docker Buildx. For example, on
+an ARM64 host with x86-64 emulation enabled:
+
+```bash
+docker buildx build --platform linux/amd64 --load -t debug-container:amd64 .
+docker buildx build --platform linux/amd64 --load -f Dockerfile-microsoft -t debug-container:microsoft-amd64 .
+```
+
+Replace `linux/amd64` with `linux/arm64` to target ARM64.
 
 ## Security
 
