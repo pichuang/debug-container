@@ -14,6 +14,7 @@ This container can be thought of as the administrator's shell. Many of the debug
 | **CentOS Stream 9** | `quay.io/centos/centos:stream9` | `master` / `latest` | Community |
 | **Azure Linux 3.0 (Microsoft)** | `mcr.microsoft.com/azurelinux/base/core:3.0` | `microsoft` | Microsoft |
 | **Ubuntu 24.04 LTS** | `ubuntu:24.04` | `ubuntu` / `ubuntu-latest` | Canonical |
+| **Azure Linux 4** | `mcr.microsoft.com/azurelinux/core:4` | `azurelinux4` / `azurelinux4-latest` | Microsoft |
 
 The `microsoft` variant uses Microsoft's Azure Linux base image. Support for this
 custom image and its additional tools is not implied by the base image's support policy.
@@ -30,9 +31,9 @@ custom image and its additional tools is not implied by the base image's support
   - [x] nmap / nmap-ncat
   - [x] tcpdump
   - [x] iperf3
-  - [x] curl / wget
+  - [x] curl / wget (`wget2` on Azure Linux 4)
 - Monitoring:
-  - [x] htop
+  - [x] htop (not available on Azure Linux 4; use `top` instead)
   - [x] sysstat
   - [x] numactl
   - [x] procps-ng
@@ -61,6 +62,9 @@ docker pull ghcr.io/pichuang/debug-container:microsoft
 
 # Ubuntu 24.04 LTS
 docker pull ghcr.io/pichuang/debug-container:ubuntu
+
+# Azure Linux 4
+docker pull ghcr.io/pichuang/debug-container:azurelinux4
 ```
 
 ## How to use `debug-container` on specific hosts?
@@ -216,6 +220,12 @@ make build-docker-ubuntu
 make run-docker-ubuntu
 ```
 
+- Azure Linux 4:
+```bash
+make build-docker-azurelinux4
+make run-docker-azurelinux4
+```
+
 - Azure Linux 3.0 with internal package mirror:
 ```bash
 docker build -f Dockerfile-microsoft \
@@ -235,13 +245,14 @@ and the weekly schedule; pull requests verify without publishing.
 CentOS uses `master` / `latest` and
 dated `vYYYYMMDD` tags; Azure Linux uses `microsoft` / `microsoft-latest` and
 dated `vYYYYMMDD-microsoft` tags. Ubuntu uses `ubuntu` / `ubuntu-latest` and
-dated `vYYYYMMDD-ubuntu` tags.
+dated `vYYYYMMDD-ubuntu` tags. Azure Linux 4 uses `azurelinux4` /
+`azurelinux4-latest` and dated `vYYYYMMDD-azurelinux4` tags; `microsoft` stays on 3.0.
 
 Push a `test-publish/*` branch to run the same checks and publish signed
-`test-<run-id>-<attempt>-<variant>` tags (`centos`, `microsoft`, or `ubuntu`)
+`test-<run-id>-<attempt>-<variant>` tags
 without updating any stable tags.
 To publish the regular tags from a selected ref, manually run the Docker
-workflow with `publish_stable=true`. It reruns all six architecture checks
+workflow with `publish_stable=true`. It reruns all eight architecture checks
 before publishing. A manual run without that option publishes only test tags.
 
 To build for a specific architecture locally, use Docker Buildx. For example, on
@@ -251,6 +262,7 @@ an ARM64 host with x86-64 emulation enabled:
 docker buildx build --platform linux/amd64 --load -t debug-container:amd64 .
 docker buildx build --platform linux/amd64 --load -f Dockerfile-microsoft -t debug-container:microsoft-amd64 .
 docker buildx build --platform linux/amd64 --load -f Dockerfile-ubuntu -t debug-container:ubuntu-amd64 .
+docker buildx build --platform linux/amd64 --load -f Dockerfile-azurelinux4 -t debug-container:azurelinux4-amd64 .
 ```
 
 Replace `linux/amd64` with `linux/arm64` to target ARM64.
