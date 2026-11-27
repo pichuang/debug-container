@@ -61,13 +61,15 @@ jobs:
       with:
         image: ${{ matrix.image }}
         args: --file=${{ matrix.dockerfile }}
-    - name: Remove malformed SARIF fix suggestions
-      # Some Snyk suggestions have non-string replacement text. Keep the findings.
+    - name: Normalize Snyk SARIF for GitHub Code Scanning
+      # Keep the findings, but omit invalid fix text and unknown security scores.
       run: |
         jq '(.runs[].results[]? | select(has("fixes"))) |= (
           .fixes |= map(select(all(.artifactChanges[].replacements[] |
             select(has("insertedContent")); (.insertedContent.text | type) == "string"))) |
-          if .fixes == [] then del(.fixes) else . end)' \
+          if .fixes == [] then del(.fixes) else . end) |
+          del(.runs[].tool.driver.rules[]?.properties["security-severity"] |
+            select(. == null or . == "null"))' \
           snyk.sarif > snyk-upload.sarif
     - name: Upload result to GitHub Code Scanning
       uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
