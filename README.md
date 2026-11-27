@@ -13,6 +13,7 @@ This container can be thought of as the administrator's shell. Many of the debug
 |---|---|---|---|
 | **CentOS Stream 9** | `quay.io/centos/centos:stream9` | `master` / `latest` | Community |
 | **Azure Linux 3.0 (Microsoft)** | `mcr.microsoft.com/azurelinux/base/core:3.0` | `microsoft` | Microsoft |
+| **Ubuntu 24.04 LTS** | `ubuntu:24.04` | `ubuntu` / `ubuntu-latest` | Canonical |
 
 The `microsoft` variant uses Microsoft's Azure Linux base image. Support for this
 custom image and its additional tools is not implied by the base image's support policy.
@@ -47,7 +48,7 @@ custom image and its additional tools is not implied by the base image's support
 
 ## Download
 
-Both image variants support **Linux ARM64** (`linux/arm64`) and **Linux x86-64**
+All image variants support **Linux ARM64** (`linux/arm64`) and **Linux x86-64**
 (`linux/amd64`). The same GHCR tag serves both architectures; Docker selects the
 matching image automatically. For 32-bit x86 (`linux/386`), no image is published.
 
@@ -57,6 +58,9 @@ docker pull ghcr.io/pichuang/debug-container:master
 
 # Azure Linux 3.0
 docker pull ghcr.io/pichuang/debug-container:microsoft
+
+# Ubuntu 24.04 LTS
+docker pull ghcr.io/pichuang/debug-container:ubuntu
 ```
 
 ## How to use `debug-container` on specific hosts?
@@ -206,6 +210,12 @@ make build-docker
 make build-docker-microsoft
 ```
 
+- Ubuntu 24.04 LTS:
+```bash
+make build-docker-ubuntu
+make run-docker-ubuntu
+```
+
 - Azure Linux 3.0 with internal package mirror:
 ```bash
 docker build -f Dockerfile-microsoft \
@@ -218,19 +228,20 @@ docker build -f Dockerfile-microsoft \
 make build-buildah
 ```
 
-Both Dockerfiles use multi-stage builds to exclude deadman's Git history from
-the final image. CI builds and runs both variants on native `amd64` and `arm64`
+All Dockerfiles use multi-stage builds to exclude deadman's Git history from
+the final image. CI builds and runs each variant on native `amd64` and `arm64`
 runners before publishing. Publishing runs on pushes to `master`, version tags,
 and the weekly schedule; pull requests verify without publishing.
 CentOS uses `master` / `latest` and
 dated `vYYYYMMDD` tags; Azure Linux uses `microsoft` / `microsoft-latest` and
-dated `vYYYYMMDD-microsoft` tags.
+dated `vYYYYMMDD-microsoft` tags. Ubuntu uses `ubuntu` / `ubuntu-latest` and
+dated `vYYYYMMDD-ubuntu` tags.
 
 Push a `test-publish/*` branch to run the same checks and publish signed
-`test-<run-id>-<attempt>-centos` and `test-<run-id>-<attempt>-microsoft` tags
+`test-<run-id>-<attempt>-<variant>` tags (`centos`, `microsoft`, or `ubuntu`)
 without updating any stable tags.
 To publish the regular tags from a selected ref, manually run the Docker
-workflow with `publish_stable=true`. It reruns all four architecture checks
+workflow with `publish_stable=true`. It reruns all six architecture checks
 before publishing. A manual run without that option publishes only test tags.
 
 To build for a specific architecture locally, use Docker Buildx. For example, on
@@ -239,6 +250,7 @@ an ARM64 host with x86-64 emulation enabled:
 ```bash
 docker buildx build --platform linux/amd64 --load -t debug-container:amd64 .
 docker buildx build --platform linux/amd64 --load -f Dockerfile-microsoft -t debug-container:microsoft-amd64 .
+docker buildx build --platform linux/amd64 --load -f Dockerfile-ubuntu -t debug-container:ubuntu-amd64 .
 ```
 
 Replace `linux/amd64` with `linux/arm64` to target ARM64.

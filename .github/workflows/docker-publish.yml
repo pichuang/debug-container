@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [centos, microsoft]
+        variant: [centos, microsoft, ubuntu]
         platform:
           - arch: amd64
             runner: ubuntu-24.04
@@ -38,6 +38,8 @@ jobs:
             dockerfile: Dockerfile
           - variant: microsoft
             dockerfile: Dockerfile-microsoft
+          - variant: ubuntu
+            dockerfile: Dockerfile-ubuntu
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -82,6 +84,11 @@ jobs:
             stable-tag: microsoft
             latest-tag: microsoft-latest
             date-suffix: '-microsoft'
+          - dockerfile: Dockerfile-ubuntu
+            variant: ubuntu
+            stable-tag: ubuntu
+            latest-tag: ubuntu-latest
+            date-suffix: '-ubuntu'
     permissions:
       contents: read
       packages: write

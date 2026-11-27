@@ -5,6 +5,7 @@ image=${1:?image reference required}
 case ${2:?image variant required} in
     centos) os=centos ;;
     microsoft) os=azurelinux ;;
+    ubuntu) os=ubuntu ;;
     *) echo "Unsupported image variant: $2" >&2; exit 1 ;;
 esac
 case ${3:?image architecture required} in
@@ -22,6 +23,9 @@ fi
 docker run --rm -i --network none --platform "linux/$3" --entrypoint /bin/bash "$image" \
     -es -- "$os" "$machine" <<'BASH'
 grep -Fx "ID=\"$1\"" /etc/os-release || grep -Fx "ID=$1" /etc/os-release
+if [ "$1" = ubuntu ]; then
+    grep -Fx 'VERSION_ID="24.04"' /etc/os-release
+fi
 test "$(uname -m)" = "$2"
 test -x /root/deadman/deadman
 test ! -e /root/deadman/.git

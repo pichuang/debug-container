@@ -1,0 +1,58 @@
+# syntax=docker.io/docker/dockerfile-upstream:1.9.0
+# check=error=true
+
+FROM docker.io/library/ubuntu:24.04@sha256:562111b88caa79c71391c0c4d3c2114a7d5c35915c20561fd893cb1e07929e6b AS builder
+# hadolint ignore=DL3008
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates git && \
+    rm -rf /var/lib/apt/lists/*
+RUN git clone https://github.com/upa/deadman.git /tmp/deadman && \
+    git -C /tmp/deadman checkout 4746fd6aae3625b44e19cb3cac566e0544c04dc9 && \
+    rm -rf /tmp/deadman/.git
+
+FROM docker.io/library/ubuntu:24.04@sha256:562111b88caa79c71391c0c4d3c2114a7d5c35915c20561fd893cb1e07929e6b
+LABEL org.opencontainers.image.title="Debug Container (Ubuntu)" \
+      org.opencontainers.image.source="https://github.com/pichuang/debug-container" \
+      org.opencontainers.image.description="Container troubleshooting tools on Ubuntu 24.04 LTS" \
+      org.opencontainers.image.documentation="https://github.com/pichuang/debug-container" \
+      org.opencontainers.image.base.name="docker.io/library/ubuntu:24.04"
+
+# hadolint ignore=DL3008
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        bind9-dnsutils \
+        ca-certificates \
+        curl \
+        ethtool \
+        git \
+        htop \
+        iperf3 \
+        iproute2 \
+        iputils-ping \
+        jq \
+        mtr-tiny \
+        ncat \
+        net-tools \
+        nmap \
+        numactl \
+        procps \
+        python3 \
+        python3-pip \
+        speedtest-cli \
+        sysstat \
+        tcpdump \
+        vim \
+        wget && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /tmp/deadman /root/deadman
+COPY motd /etc/motd
+RUN printf '\ncat /etc/motd\n' >> /root/.bashrc
+
+EXPOSE 5566
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD ["/bin/bash", "-c", "command -v ip && test -x /root/deadman/deadman"]
+
+WORKDIR /root
+ENV HOSTNAME=debug-container
+CMD ["/bin/bash", "-l"]
