@@ -6,6 +6,7 @@ spec:
   containers:
   - image: ghcr.io/pichuang/debug-container:master
     name: ocp-debug-container
+    workingDir: /
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "while true; do sleep 30; done;" ]
     resources:
