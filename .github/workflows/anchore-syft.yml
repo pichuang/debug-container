@@ -35,6 +35,12 @@ jobs:
           - dockerfile: Dockerfile-microsoft
             image-tag: localbuild/testimage-microsoft:latest
             artifact-name: image-microsoft-spdx-json
+          - dockerfile: Dockerfile-ubuntu
+            image-tag: localbuild/testimage-ubuntu:latest
+            artifact-name: image-ubuntu-spdx-json
+          - dockerfile: Dockerfile-azurelinux4
+            image-tag: localbuild/testimage-azurelinux4:latest
+            artifact-name: image-azurelinux4-spdx-json
     steps:
     - name: Checkout the code
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

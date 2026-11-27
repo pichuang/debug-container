@@ -1,7 +1,8 @@
 # syntax=docker.io/docker/dockerfile-upstream:1.9.0
 # check=error=true
 
-FROM quay.io/centos/centos:stream9@sha256:b76d33c9df2e709b3a2d81ed2913c9deee814a9aabba16a57226b3a9fbea6d84 AS builder
+ARG BASE_IMAGE=quay.io/centos/centos:stream9@sha256:b76d33c9df2e709b3a2d81ed2913c9deee814a9aabba16a57226b3a9fbea6d84
+FROM ${BASE_IMAGE} AS builder
 # hadolint ignore=DL3033
 RUN yum -y install git ca-certificates && \
     yum -y clean all
@@ -9,7 +10,7 @@ RUN git clone https://github.com/upa/deadman.git /tmp/deadman && \
     git -C /tmp/deadman checkout 4746fd6aae3625b44e19cb3cac566e0544c04dc9 && \
     rm -rf /tmp/deadman/.git
 
-FROM quay.io/centos/centos:stream9@sha256:b76d33c9df2e709b3a2d81ed2913c9deee814a9aabba16a57226b3a9fbea6d84
+FROM ${BASE_IMAGE}
 LABEL org.opencontainers.image.title="Debug Container" \
       org.opencontainers.image.authors="Phil Huang <phil.huang@microsoft.com>" \
       org.opencontainers.image.source="https://github.com/pichuang/debug-container" \

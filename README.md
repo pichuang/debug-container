@@ -13,6 +13,8 @@ An interactive shell with tools such as `ping`, `dig`, `mtr`, and `tcpdump` for 
 |---|---|---|---|
 | **CentOS Stream 9** | `quay.io/centos/centos:stream9` | `master` / `latest` | Community |
 | **Azure Linux 3.0 (Microsoft)** | `mcr.microsoft.com/azurelinux/base/core:3.0` | `microsoft` / `microsoft-latest` | Microsoft |
+| **Ubuntu 24.04 LTS** | `ubuntu:24.04` | `ubuntu` / `ubuntu-latest` | Canonical |
+| **Azure Linux 4** | `mcr.microsoft.com/azurelinux/core:4` | `azurelinux4` / `azurelinux4-latest` | Microsoft |
 
 The `microsoft` variant uses Microsoft's Azure Linux base image. Support for this
 custom image and its additional tools is not implied by the base image's support policy.
@@ -29,9 +31,9 @@ custom image and its additional tools is not implied by the base image's support
   - [x] nmap / nmap-ncat
   - [x] tcpdump
   - [x] iperf3
-  - [x] curl / wget
+  - [x] curl / wget (`wget2` on Azure Linux 4)
 - Monitoring:
-  - [x] htop
+  - [x] htop (not available on Azure Linux 4; use `top` instead)
   - [x] sysstat
   - [x] numactl
   - [x] procps-ng
@@ -48,7 +50,7 @@ custom image and its additional tools is not implied by the base image's support
 
 ## Download
 
-Both image variants support **Linux ARM64** (`linux/arm64`) and **Linux x86-64**
+All image variants support **Linux ARM64** (`linux/arm64`) and **Linux x86-64**
 (`linux/amd64`). The same GHCR tag serves both architectures; Docker selects the
 matching image automatically. For 32-bit x86 (`linux/386`), no image is published.
 
@@ -58,6 +60,12 @@ docker pull ghcr.io/pichuang/debug-container:master
 
 # Azure Linux 3.0
 docker pull ghcr.io/pichuang/debug-container:microsoft
+
+# Ubuntu 24.04 LTS
+docker pull ghcr.io/pichuang/debug-container:ubuntu
+
+# Azure Linux 4
+docker pull ghcr.io/pichuang/debug-container:azurelinux4
 ```
 
 ## Docker
@@ -216,6 +224,18 @@ make build-docker
 make build-docker-microsoft
 ```
 
+- Ubuntu 24.04 LTS:
+```bash
+make build-docker-ubuntu
+make run-docker-ubuntu
+```
+
+- Azure Linux 4:
+```bash
+make build-docker-azurelinux4
+make run-docker-azurelinux4
+```
+
 - Azure Linux 3.0 with internal package mirror:
 ```bash
 docker build -f Dockerfile-microsoft \
@@ -228,22 +248,27 @@ docker build -f Dockerfile-microsoft \
 make build-buildah
 ```
 
-Both Dockerfiles use multi-stage builds to exclude deadman's Git history from
-the final image. CI builds and runs both variants on native `amd64` and `arm64`
-runners before publishing. Publishing runs on pushes to `master`, matching
-Git tags (such as `v1.2.3`), and the weekly schedule; pull requests verify without
-publishing. A Git version tag triggers publishing but does not produce a
-same-named image tag.
+All Dockerfiles use multi-stage builds to exclude deadman's Git history from
+the final image. CI builds and runs each variant on native `amd64` and `arm64`
+runners before publishing. Pull requests and pushes to `master` verify without
+publishing. Every other Sunday at 19:30 UTC, the release workflow resolves fresh
+base image digests, rebuilds every variant without the layer cache, tests both
+architectures, and promotes signed images to their official tags.
 CentOS uses `master` / `latest` and
 dated `vYYYYMMDD` tags; Azure Linux uses `microsoft` / `microsoft-latest` and
-dated `vYYYYMMDD-microsoft` tags.
+dated `vYYYYMMDD-microsoft` tags. Ubuntu uses `ubuntu` / `ubuntu-latest` and
+dated `vYYYYMMDD-ubuntu` tags. Azure Linux 4 uses `azurelinux4` /
+`azurelinux4-latest` and dated `vYYYYMMDD-azurelinux4` tags; `microsoft` stays on 3.0.
 
 Push a `test-publish/*` branch to run the same checks and publish signed
-`test-<run-id>-<attempt>-centos` and `test-<run-id>-<attempt>-microsoft` tags
+`test-<run-id>-<attempt>-<variant>` tags
 without updating any stable tags.
-To publish the regular tags from a selected ref, manually run the Docker
-workflow with `publish_stable=true`. It reruns all four architecture checks
-before publishing. A manual run without that option publishes only test tags.
+Each [GitHub Release](https://github.com/pichuang/debug-container/releases)
+contains English change notes, pull references, and an `images.json` attachment
+with the exact base and published digests. To publish outside the schedule,
+manually run the Docker workflow on `master` with `publish_stable=true`. A
+manual run without that option publishes only test tags and previews the
+release notes. A published daily release tag is never overwritten.
 
 To build for a specific architecture locally, use Docker Buildx. For example, on
 an ARM64 host with x86-64 emulation enabled:
@@ -251,6 +276,8 @@ an ARM64 host with x86-64 emulation enabled:
 ```bash
 docker buildx build --platform linux/amd64 --load -t debug-container:amd64 .
 docker buildx build --platform linux/amd64 --load -f Dockerfile-microsoft -t debug-container:microsoft-amd64 .
+docker buildx build --platform linux/amd64 --load -f Dockerfile-ubuntu -t debug-container:ubuntu-amd64 .
+docker buildx build --platform linux/amd64 --load -f Dockerfile-azurelinux4 -t debug-container:azurelinux4-amd64 .
 ```
 
 Replace `linux/amd64` with `linux/arm64` to target ARM64.

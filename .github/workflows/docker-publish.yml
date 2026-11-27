@@ -5,13 +5,12 @@ on:
     - cron: '30 19 * * 0'
   push:
     branches: [ "master", "test-publish/**" ]
-    tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "master" ]
   workflow_dispatch:
     inputs:
       publish_stable:
-        description: Publish stable tags after all architecture tests pass
+        description: Create a GitHub Release from the default branch after all tests pass
         type: boolean
         default: false
 
@@ -20,14 +19,35 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      verify: ${{ steps.plan.outputs.verify }}
+      publish: ${{ steps.plan.outputs.publish }}
+      release: ${{ steps.plan.outputs.release }}
+      tag: ${{ steps.plan.outputs.tag }}
+      bases: ${{ steps.plan.outputs.bases }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Plan build and release
+        id: plan
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          PUBLISH_STABLE: ${{ inputs.publish_stable }}
+        run: bash .github/scripts/plan-images.sh
+
   verify:
+    needs: prepare
+    if: needs.prepare.outputs.verify == 'true'
     runs-on: ${{ matrix.platform.runner }}
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
-        variant: [centos, microsoft]
+        variant: [centos, microsoft, ubuntu, azurelinux4]
         platform:
           - arch: amd64
             runner: ubuntu-24.04
@@ -38,6 +58,10 @@ jobs:
             dockerfile: Dockerfile
           - variant: microsoft
             dockerfile: Dockerfile-microsoft
+          - variant: ubuntu
+            dockerfile: Dockerfile-ubuntu
+          - variant: azurelinux4
+            dockerfile: Dockerfile-azurelinux4
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -53,6 +77,8 @@ jobs:
           platforms: linux/${{ matrix.platform.arch }}
           load: true
           tags: debug-container:verify
+          build-args: BASE_IMAGE=${{ fromJSON(needs.prepare.outputs.bases)[matrix.dockerfile] }}
+          no-cache: ${{ needs.prepare.outputs.publish == 'true' }}
           cache-from: type=gha,scope=${{ matrix.variant }}-${{ matrix.platform.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.variant }}-${{ matrix.platform.arch }}
 
@@ -63,25 +89,21 @@ jobs:
           ARCH: ${{ matrix.platform.arch }}
 
   build:
-    needs: verify
-    if: github.event_name != 'pull_request'
+    needs: [prepare, verify]
+    if: needs.prepare.outputs.publish == 'true'
     runs-on: ubuntu-latest
-    env:
-      PUBLISH_STABLE: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_stable) || (github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/heads/test-publish/')) }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - dockerfile: Dockerfile
             variant: centos
-            stable-tag: master
-            latest-tag: latest
-            date-suffix: ''
           - dockerfile: Dockerfile-microsoft
             variant: microsoft
-            stable-tag: microsoft
-            latest-tag: microsoft-latest
-            date-suffix: '-microsoft'
+          - dockerfile: Dockerfile-ubuntu
+            variant: ubuntu
+          - dockerfile: Dockerfile-azurelinux4
+            variant: azurelinux4
     permissions:
       contents: read
       packages: write
@@ -116,11 +138,7 @@ jobs:
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=v{{date 'YYYYMMDD'}}${{ matrix.date-suffix }},enable=${{ env.PUBLISH_STABLE }}
-            type=raw,value=${{ matrix.stable-tag }},enable=${{ env.PUBLISH_STABLE }}
-            type=raw,value=${{ matrix.latest-tag }},enable=${{ env.PUBLISH_STABLE }}
-            type=raw,value=test-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.variant }},enable=${{ env.PUBLISH_STABLE == 'false' }}
+          tags: type=raw,value=test-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.variant }}
 
       - name: Build and push Docker image
         id: build-and-push
@@ -131,9 +149,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: |
-            type=gha,scope=${{ matrix.variant }}-amd64
-            type=gha,scope=${{ matrix.variant }}-arm64
+          build-args: BASE_IMAGE=${{ fromJSON(needs.prepare.outputs.bases)[matrix.dockerfile] }}
+          no-cache: true
           platforms: linux/amd64,linux/arm64
 
       - name: Verify published image index
@@ -152,3 +169,32 @@ jobs:
           while IFS= read -r tag; do
             cosign sign --yes "${tag}@${DIGEST}"
           done <<< "${TAGS}"
+
+  release:
+    needs: [prepare, build]
+    if: needs.prepare.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: stable-images-${{ github.repository }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        if: needs.prepare.outputs.release == 'true'
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Record changes and publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          PUBLISH_RELEASE: ${{ needs.prepare.outputs.release }}
+          BASES: ${{ needs.prepare.outputs.bases }}
+        run: bash .github/scripts/release-images.sh

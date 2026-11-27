@@ -6,7 +6,8 @@ CONTAINER_NAME=debug-container
 .DEFAULT_GOAL:=help
 SHELL:=/bin/bash
 
-.PHONY: help build-buildah run-podman run-podman-mix build-docker run-docker run-docker-mix build-docker-microsoft run-docker-microsoft inspect-podman inspect-docker
+.PHONY: help build-buildah run-podman run-podman-mix build-docker run-docker run-docker-mix build-docker-microsoft run-docker-microsoft build-docker-ubuntu run-docker-ubuntu inspect-podman inspect-docker
+.PHONY: build-docker-azurelinux4 run-docker-azurelinux4
 
 help: ## Display help information
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -34,11 +35,25 @@ build-docker-microsoft: ## Build Docker image with Microsoft Azure Linux
 	docker build -f Dockerfile-microsoft -t $(IMAGE_REPO)/$(IMAGE_NAME):microsoft .
 	docker images
 
+build-docker-ubuntu: ## Build Docker image with Ubuntu 24.04 LTS
+	docker build -f Dockerfile-ubuntu -t $(IMAGE_REPO)/$(IMAGE_NAME):ubuntu .
+	docker images
+
+build-docker-azurelinux4: ## Build Docker image with Azure Linux 4
+	docker build -f Dockerfile-azurelinux4 -t $(IMAGE_REPO)/$(IMAGE_NAME):azurelinux4 .
+	docker images
+
 run-docker: ## Run Independent Docker Image
 	docker run --rm -it --name $(CONTAINER_NAME) $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 run-docker-microsoft: ## Run Independent Docker Image (Microsoft)
 	docker run --rm -it --name $(CONTAINER_NAME)-microsoft $(IMAGE_REPO)/$(IMAGE_NAME):microsoft
+
+run-docker-ubuntu: ## Run Independent Docker Image (Ubuntu)
+	docker run --rm -it --name $(CONTAINER_NAME)-ubuntu $(IMAGE_REPO)/$(IMAGE_NAME):ubuntu
+
+run-docker-azurelinux4: ## Run Independent Docker Image (Azure Linux 4)
+	docker run --rm -it --name $(CONTAINER_NAME)-azurelinux4 $(IMAGE_REPO)/$(IMAGE_NAME):azurelinux4
 
 run-docker-mix: ## Run Mixed Docker Image
 	docker run -it --rm --name $(CONTAINER_NAME) --privileged \
