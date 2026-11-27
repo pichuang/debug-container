@@ -48,6 +48,7 @@ RUN if [ "${PACKAGE_REPO_URL}" != "https://packages.microsoft.com/azurelinux" ];
         bind-utils \
         iproute \
         nmap \
+        nmap-ncat \
         wget \
         curl \
         tcpdump \
