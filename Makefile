@@ -30,7 +30,7 @@ build-docker: ## Build Docker image with Docker
 	docker build -t $(IMAGE_REPO)/$(IMAGE_NAME):$(IMAGE_TAG) .
 	docker images
 
-build-docker-microsoft: ## Build Docker image with Azure Linux (Microsoft Supported)
+build-docker-microsoft: ## Build Docker image with Microsoft Azure Linux
 	docker build -f Dockerfile-microsoft -t $(IMAGE_REPO)/$(IMAGE_NAME):microsoft .
 	docker images
 
