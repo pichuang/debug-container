@@ -4,18 +4,84 @@ on:
   schedule:
     - cron: '30 19 * * 0'
   push:
-    branches: [ "master" ]
+    branches: [ "master", "test-publish/**" ]
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      publish_stable:
+        description: Publish stable tags after all architecture tests pass
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  verify:
+    runs-on: ${{ matrix.platform.runner }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [centos, microsoft]
+        platform:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+        include:
+          - variant: centos
+            dockerfile: Dockerfile
+          - variant: microsoft
+            dockerfile: Dockerfile-microsoft
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Build native image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/${{ matrix.platform.arch }}
+          load: true
+          tags: debug-container:verify
+          cache-from: type=gha,scope=${{ matrix.variant }}-${{ matrix.platform.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.variant }}-${{ matrix.platform.arch }}
+
+      - name: Smoke test native image
+        run: bash .github/scripts/smoke-test-image.sh debug-container:verify "$VARIANT" "$ARCH"
+        env:
+          VARIANT: ${{ matrix.variant }}
+          ARCH: ${{ matrix.platform.arch }}
+
   build:
+    needs: verify
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    env:
+      PUBLISH_STABLE: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_stable) || (github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/heads/test-publish/')) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dockerfile: Dockerfile
+            variant: centos
+            stable-tag: master
+            latest-tag: latest
+            date-suffix: ''
+          - dockerfile: Dockerfile-microsoft
+            variant: microsoft
+            stable-tag: microsoft
+            latest-tag: microsoft-latest
+            date-suffix: '-microsoft'
     permissions:
       contents: read
       packages: write
@@ -26,16 +92,19 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install cosign
-        if: github.event_name != 'pull_request'
-        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+        uses: sigstore/cosign-installer@881c63bd87e38389154debd8331404ce7ca8a3ab # v4.1.4
         with:
           cosign-release: 'v3.0.6'
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -44,28 +113,42 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=v{{date 'YYYYMMDD'}}
-            type=raw,value=latest
+            type=raw,value=v{{date 'YYYYMMDD'}}${{ matrix.date-suffix }},enable=${{ env.PUBLISH_STABLE }}
+            type=raw,value=${{ matrix.stable-tag }},enable=${{ env.PUBLISH_STABLE }}
+            type=raw,value=${{ matrix.latest-tag }},enable=${{ env.PUBLISH_STABLE }}
+            type=raw,value=test-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.variant }},enable=${{ env.PUBLISH_STABLE == 'false' }}
 
       - name: Build and push Docker image
         id: build-and-push
-        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
+          file: ${{ matrix.dockerfile }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=${{ matrix.variant }}-amd64
+            type=gha,scope=${{ matrix.variant }}-arm64
           platforms: linux/amd64,linux/arm64
 
+      - name: Verify published image index
+        env:
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+        run: |
+          docker buildx imagetools inspect --raw "${REGISTRY}/${IMAGE_NAME,,}@${DIGEST}" |
+            jq -e '[.manifests[].platform | select(.os == "linux") | .architecture] |
+              sort == ["amd64", "arm64"]'
+
       - name: Sign the published Docker image
-        if: ${{ github.event_name != 'pull_request' }}
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
-        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+        run: |
+          while IFS= read -r tag; do
+            cosign sign --yes "${tag}@${DIGEST}"
+          done <<< "${TAGS}"
