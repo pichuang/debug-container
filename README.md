@@ -1,18 +1,18 @@
 # Debug-Container
 
-[![Docker Repository on Quay](https://quay.io/repository/tw_pichuang/debug-container/status "Docker Repository on Quay")](https://quay.io/repository/tw_pichuang/debug-container)
+[Container images on GitHub Container Registry (GHCR)](https://github.com/pichuang/debug-container/pkgs/container/debug-container)
 
 [![OpenSSF - Scorecard supply-chain security](https://github.com/pichuang/debug-container/actions/workflows/scorecard.yml/badge.svg)](https://github.com/pichuang/debug-container/actions/workflows/scorecard.yml)
 [![Docker](https://github.com/pichuang/debug-container/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/pichuang/debug-container/actions/workflows/docker-publish.yml)
 
-This container can be thought of as the administrator's shell. Many of the debugging tools (such as ping, traceroute, and mtr) and man pages that an administrator might use to diagnose problems on the host are in this container.
+An interactive shell with tools such as `ping`, `dig`, `mtr`, and `tcpdump` for troubleshooting container, Kubernetes, and host networking.
 
 ## Container Image Variants
 
 | Variant | Base Image | Tag | Base Image Provider |
 |---|---|---|---|
 | **CentOS Stream 9** | `quay.io/centos/centos:stream9` | `master` / `latest` | Community |
-| **Azure Linux 3.0 (Microsoft)** | `mcr.microsoft.com/azurelinux/base/core:3.0` | `microsoft` | Microsoft |
+| **Azure Linux 3.0 (Microsoft)** | `mcr.microsoft.com/azurelinux/base/core:3.0` | `microsoft` / `microsoft-latest` | Microsoft |
 | **Ubuntu 24.04 LTS** | `ubuntu:24.04` | `ubuntu` / `ubuntu-latest` | Canonical |
 | **Azure Linux 4** | `mcr.microsoft.com/azurelinux/core:4` | `azurelinux4` / `azurelinux4-latest` | Microsoft |
 
@@ -43,6 +43,7 @@ custom image and its additional tools is not implied by the base image's support
   - [x] jq
   - [x] python3 / pip3
   - [x] speedtest-cli
+  - [x] deadman (`/root/deadman/deadman`, not on `PATH`)
 - CentOS Stream 9 only:
   - [x] hping3
   - [x] dnsperf
@@ -67,14 +68,28 @@ docker pull ghcr.io/pichuang/debug-container:ubuntu
 docker pull ghcr.io/pichuang/debug-container:azurelinux4
 ```
 
-## How to use `debug-container` on specific hosts?
+## Docker
 
-1. Bridge Mode (Container on OS):
+Start a shell on Docker's default bridge network:
+
 ```bash
 docker run -it --rm --name debug-container ghcr.io/pichuang/debug-container:master
 ```
 
-2. Host Mode (Container within OS):
+To share an existing container's network namespace, replace `my-container`
+with the name of a running container:
+
+```bash
+docker run -it --rm --network container:my-container ghcr.io/pichuang/debug-container:master
+```
+
+### Advanced: Docker host access
+
+Run only on a trusted Linux Docker host you administer. This command uses
+`--privileged`, shares the host's network, PID, and IPC namespaces, and mounts
+the host root filesystem at `/host` **with write access**. Use the bridge
+example if you do not need host access.
+
 ```bash
 docker run -it --rm --name debug --privileged \
        --ipc=host --net=host --pid=host -e HOST=/host \
@@ -84,123 +99,118 @@ docker run -it --rm --name debug --privileged \
        ghcr.io/pichuang/debug-container:master
 ```
 
-3. Container Mode (Bridge another container)
+## Kubernetes (including AKS and Tanzu)
+
+Start a temporary shell in your current namespace. Exit the shell to remove
+the Pod. Use `-n YOUR_NAMESPACE` to select another namespace. Restricted
+namespaces can reject this example, which uses the image's default root user.
+
 ```bash
-docker run -it --rm --name debug-container --net container:<container_name> ghcr.io/pichuang/debug-container:master
+kubectl run debug-container --restart=Never --rm -it \
+  --image=ghcr.io/pichuang/debug-container:master --command -- /bin/bash
 ```
 
-## How to use `debug-container` on Native Kubernetes/Tanzu Kubernetes Grid Cluster/Azure Kubernetes Service?
+To use the Pod network on a specific node, run
+`kubectl get nodes -L kubernetes.io/hostname` and set `NODE_HOSTNAME` to the
+target node's label value:
 
-1. Namespace Level Debugging: Running one Pod in namespace and `any node`
 ```bash
-kubectl run -n default debug-container --restart=Never --rm -i --tty --image ghcr.io/pichuang/debug-container:master -- /bin/bash
+NODE_HOSTNAME=my-node
+kubectl run debug-container --restart=Never --rm -it \
+  --image=ghcr.io/pichuang/debug-container:master \
+  --overrides="{\"apiVersion\":\"v1\",\"spec\":{\"nodeSelector\":{\"kubernetes.io/hostname\":\"${NODE_HOSTNAME}\"}}}" \
+  --command -- /bin/bash
 ```
 
-2. Namespace Level Debugging: Running one Pod in namespace and `specific node`
-```bash
-# Show all of nodes
-kubectl get nodes
-NAME                                STATUS   ROLES   AGE   VERSION
-aks-agentpool-40137516-vmss000000   Ready    agent   82m   v1.22.11
-aks-agentpool-40137516-vmss000001   Ready    agent   82m   v1.22.11
-aks-agentpool-40137516-vmss000002   Ready    agent   82m   v1.22.11
+### Advanced: Kubernetes node access
 
-# Run the command
-kubectl run -n default debug-container --restart=Never --rm -i --tty --overrides='{ "apiVersion": "v1", "spec": {"nodeSelector":{"kubernetes.io/hostname":"aks-agentpool-40137516-vmss000002"}}}' --image ghcr.io/pichuang/debug-container:master -- /bin/bash
+For node **network** access only, set `NODE_HOSTNAME` as above and use
+`hostNetwork: true`. This shares the node's network namespace but does not
+mount its filesystem. Your namespace policy must allow host networking.
+
+```bash
+NODE_HOSTNAME=my-node
+kubectl run debug-container --restart=Never --rm -it \
+  --image=ghcr.io/pichuang/debug-container:master \
+  --overrides="{\"apiVersion\":\"v1\",\"spec\":{\"hostNetwork\":true,\"nodeSelector\":{\"kubernetes.io/hostname\":\"${NODE_HOSTNAME}\"}}}" \
+  --command -- /bin/bash
 ```
 
-3. Node Level Debugging: Running one Pod on `specific node`
+For node **filesystem** access, use `kubectl debug node`. Set `NODE` to the
+node's name from `kubectl get nodes` (not its hostname label). The debug Pod
+uses host namespaces and mounts the node filesystem at `/host`; `chroot`
+requires an appropriate debug profile and cluster policy. After exiting, delete
+the debug Pod using the name printed by `kubectl debug`.
+
 ```bash
-kubectl run -n default debug-container --image ghcr.io/pichuang/debug-container:master \
-  --restart=Never -it --attach --rm \
-  --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"aks-agentpool-40137516-vmss000002"}, "hostNetwork": true}}' -- /bin/bash
-
-# or
-$ kubectl debug node/aks-agentpool-40137516-vmss000002 -it --image=ghcr.io/pichuang/debug-container:master -- /bin/bash
-Creating debugging pod node-debugger-aks-agentpool-40137516-vmss000002-psvms with container debugger on node aks-agentpool-40137516-vmss000002.
-If you don't see a command prompt, try pressing enter.
-
-[root@aks-agentpool-14864487-vmss000000 /]# chroot /host /bin/bash
-root [ / ]# cat /etc/os-release | head -n 2
+NODE=my-node
+kubectl debug "node/${NODE}" -it \
+  --image=ghcr.io/pichuang/debug-container:master -- /bin/bash
+# Replace DEBUG_POD_NAME with the Pod name printed above.
+kubectl delete pod DEBUG_POD_NAME
 ```
 
-4. Deploy as a Deployment
+## Red Hat OpenShift
+
+Run `oc project` to check your active project. Start a temporary shell
+without requesting extra capabilities. The working directory is `/` so the shell
+does not depend on access to `/root` when OpenShift assigns a non-root UID:
+
+```bash
+oc run ocp-debug-container --restart=Never --rm -it \
+  --image=ghcr.io/pichuang/debug-container:master \
+  --override-type=strategic \
+  --overrides='{"apiVersion":"v1","spec":{"containers":[{"name":"ocp-debug-container","workingDir":"/"}]}}' \
+  --command -- /bin/bash
+```
+
+Use `oc rsh POD_NAME` to open a shell in an existing Pod, or
+`oc debug pod/POD_NAME` to start a debug copy. For node-level access, use
+`oc debug node/NODE_NAME` if permitted by your cluster.
+
+## YAML examples
+
+Run these commands from the repository root. They use your current namespace
+or project. All examples use `:master`; change the manifest's image tag to
+`:microsoft` for Azure Linux.
+
+**Kubernetes [Pod](pod-debug-container.yaml):** A toolbox for a single
+session. It runs as root and requests `NET_RAW` and `NET_ADMIN`; it does not
+meet the Restricted Pod Security standard.
+
+```bash
+kubectl apply -f pod-debug-container.yaml
+kubectl wait --for=condition=Ready pod/debug-container --timeout=90s
+kubectl exec -it pod/debug-container -- /bin/bash
+kubectl delete -f pod-debug-container.yaml
+```
+
+**Kubernetes [Deployment](deployment-debug-container.yaml):** Keeps one
+toolbox replica available until deleted. It also runs as root, but does not
+explicitly add capabilities.
+
 ```bash
 kubectl apply -f deployment-debug-container.yaml
+kubectl rollout status deployment/debug-container --timeout=90s
+kubectl exec -it deployment/debug-container -- /bin/bash
+kubectl delete -f deployment-debug-container.yaml
 ```
 
-## How to use `debug-container` on Red Hat OpenShift?
-
-1. Namespace Level Debugging: Running one Pod in project and `any node`
-```bash
-oc project <PROJECT NAME>
-oc run ocp-debug-container --image ghcr.io/pichuang/debug-container:master \
-   --restart=Never --attach -i --tty --rm
-```
-
-2. Namespace Level Debugging: Running one Pod in project and `specific node`
-```bash
-oc project <PROJECT NAME>
-oc run ocp-debug-container --image ghcr.io/pichuang/debug-container:master \
-   --restart=Never --attach -i --tty --rm \
-   --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"compute-1"}}}'
-```
-- Remind: Please replace `kubernetes.io/hostname:<hostname>`
-
-3. Node Level Debugging: Running one Pod on `specific node`
+**[OpenShift Pod](pod-ocp-debug-container.yaml):** Lets OpenShift assign the
+UID, but still requires a Security Context Constraint (SCC) that permits
+`NET_RAW` and `NET_ADMIN`. The default restricted SCC does not allow this
+capability set.
 
 ```bash
-oc project <PROJECT NAME>
-oc run ocp-debug-container --image ghcr.io/pichuang/debug-container:master \
-  --restart=Never -it --attach --rm \
-  --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"compute-1"}, "hostNetwork": true}}'
+oc apply -f pod-ocp-debug-container.yaml
+oc wait --for=condition=Ready pod/ocp-debug-container --timeout=90s
+oc rsh ocp-debug-container
+oc delete -f pod-ocp-debug-container.yaml
 ```
 
-4. Running Container Level Debugging
-```bash
-oc project <PROJECT NAME>
-oc rsh pod/<POD NAME>
-```
-
-5. Running Pods Level Debugging
-```bash
-oc project <PROJECT NAME>
-oc debug pods/<Pod NAME>
-```
-
-## How to Import YAML?
-
-```yaml
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: debug-container
-spec:
-  containers:
-  - image: ghcr.io/pichuang/debug-container:master
-    name: debug-container
-    command: [ "/bin/bash", "-c", "--" ]
-    args: [ "while true; do sleep 30; done;" ]
-    resources:
-      requests:
-        cpu: 100m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-    securityContext:
-      runAsUser: 0
-      runAsNonRoot: false
-      allowPrivilegeEscalation: false
-      capabilities:
-        drop:
-          - ALL
-        add:
-          - NET_RAW
-          - NET_ADMIN
-```
-
+The Deployment uses `imagePullPolicy: Always` to check the registry for the
+current digest when a container starts. Both standalone Pods use Kubernetes'
+default `IfNotPresent` for `:master` and may reuse a cached image.
 
 ## How to build the container images?
 
@@ -233,7 +243,7 @@ docker build -f Dockerfile-microsoft \
   -t debug-container:microsoft .
 ```
 
-- If you choose buildah...
+- CentOS Stream 9 with Buildah:
 ```bash
 make build-buildah
 ```

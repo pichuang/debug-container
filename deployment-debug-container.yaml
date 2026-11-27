@@ -3,7 +3,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: debug-container
-  namespace: default
 spec:
   replicas: 1
   selector:
