@@ -1,11 +1,19 @@
 # syntax=docker.io/docker/dockerfile-upstream:1.9.0
 # check=error=true
 
-FROM quay.io/centos/centos:stream9@sha256:b99dfd34a0bb6ab79c59d3b2e6d8782bf254eec7a58f5533ce4b1cf8de6c90d0
+FROM quay.io/centos/centos:stream9@sha256:b76d33c9df2e709b3a2d81ed2913c9deee814a9aabba16a57226b3a9fbea6d84 AS builder
+# hadolint ignore=DL3033
+RUN yum -y install git ca-certificates && \
+    yum -y clean all
+RUN git clone https://github.com/upa/deadman.git /tmp/deadman && \
+    git -C /tmp/deadman checkout 4746fd6aae3625b44e19cb3cac566e0544c04dc9 && \
+    rm -rf /tmp/deadman/.git
+
+FROM quay.io/centos/centos:stream9@sha256:b76d33c9df2e709b3a2d81ed2913c9deee814a9aabba16a57226b3a9fbea6d84
 LABEL org.opencontainers.image.title="Debug Container" \
       org.opencontainers.image.authors="Phil Huang <phil.huang@microsoft.com>" \
       org.opencontainers.image.source="https://github.com/pichuang/debug-container" \
-      org.opencontainers.image.description="A short and concise Container Troubleshooting Tool that is updated daily" \
+      org.opencontainers.image.description="A short and concise Container Troubleshooting Tool rebuilt weekly" \
       org.opencontainers.image.vendor="divecode.in" \
       org.opencontainers.image.url="ghcr.io/pichuang/debug-container:master" \
       org.opencontainers.image.documentation="https://github.com/pichuang/debug-container"
@@ -42,12 +50,9 @@ RUN yum -y install epel-release && \
         ethtool && \
     yum -y clean all && \
     rm -rf /var/cache/yum && \
-    rm /root/anaconda-ks.cfg /root/anaconda-post.log /root/original-ks.cfg /root/anaconda-post-nochroot.log
+    rm -f /root/anaconda-ks.cfg /root/anaconda-post.log /root/original-ks.cfg /root/anaconda-post-nochroot.log
 
-# Clone repository (pinned to specific commit for supply chain security)
-RUN git clone https://github.com/upa/deadman.git /root/deadman && \
-    cd /root/deadman && \
-    git checkout 4746fd6aae3625b44e19cb3cac566e0544c04dc9
+COPY --from=builder /tmp/deadman /root/deadman
 
 # Set motd
 COPY motd /etc/motd

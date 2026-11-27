@@ -4,7 +4,7 @@ metadata:
   name: ocp-debug-container
 spec:
   containers:
-  - image: quay.io/tw_pichuang/debug-container:latest
+  - image: ghcr.io/pichuang/debug-container:master
     name: ocp-debug-container
     command: [ "/bin/bash", "-c", "--" ]
     args: [ "while true; do sleep 30; done;" ]
