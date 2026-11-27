@@ -8,6 +8,12 @@ on:
     tags: [ 'v*.*.*' ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      publish_stable:
+        description: Publish stable tags after all architecture tests pass
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -60,6 +66,8 @@ jobs:
     needs: verify
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    env:
+      PUBLISH_STABLE: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_stable) || (github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/heads/test-publish/')) }}
     strategy:
       fail-fast: false
       matrix:
@@ -109,10 +117,10 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=v{{date 'YYYYMMDD'}}${{ matrix.date-suffix }},enable=${{ !startsWith(github.ref, 'refs/heads/test-publish/') }}
-            type=raw,value=${{ matrix.stable-tag }},enable=${{ !startsWith(github.ref, 'refs/heads/test-publish/') }}
-            type=raw,value=${{ matrix.latest-tag }},enable=${{ !startsWith(github.ref, 'refs/heads/test-publish/') }}
-            type=raw,value=test-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.variant }},enable=${{ startsWith(github.ref, 'refs/heads/test-publish/') }}
+            type=raw,value=v{{date 'YYYYMMDD'}}${{ matrix.date-suffix }},enable=${{ env.PUBLISH_STABLE }}
+            type=raw,value=${{ matrix.stable-tag }},enable=${{ env.PUBLISH_STABLE }}
+            type=raw,value=${{ matrix.latest-tag }},enable=${{ env.PUBLISH_STABLE }}
+            type=raw,value=test-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.variant }},enable=${{ env.PUBLISH_STABLE == 'false' }}
 
       - name: Build and push Docker image
         id: build-and-push

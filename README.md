@@ -229,6 +229,9 @@ dated `vYYYYMMDD-microsoft` tags.
 Push a `test-publish/*` branch to run the same checks and publish signed
 `test-<run-id>-<attempt>-centos` and `test-<run-id>-<attempt>-microsoft` tags
 without updating any stable tags.
+To publish the regular tags from a selected ref, manually run the Docker
+workflow with `publish_stable=true`. It reruns all four architecture checks
+before publishing. A manual run without that option publishes only test tags.
 
 To build for a specific architecture locally, use Docker Buildx. For example, on
 an ARM64 host with x86-64 emulation enabled:
