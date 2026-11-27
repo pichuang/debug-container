@@ -9,12 +9,13 @@ This container can be thought of as the administrator's shell. Many of the debug
 
 ## Container Image Variants
 
-| Variant | Base Image | Tag | Support |
+| Variant | Base Image | Tag | Base Image Provider |
 |---|---|---|---|
 | **CentOS Stream 9** | `quay.io/centos/centos:stream9` | `master` / `latest` | Community |
 | **Azure Linux 3.0 (Microsoft)** | `mcr.microsoft.com/azurelinux/base/core:3.0` | `microsoft` | Microsoft |
 
-> **Recommended**: Use the `microsoft` variant (`Dockerfile-microsoft`) for production workloads requiring Microsoft support.
+The `microsoft` variant uses Microsoft's Azure Linux base image. Support for this
+custom image and its additional tools is not implied by the base image's support policy.
 
 ## Included Tools
 
@@ -50,7 +51,7 @@ This container can be thought of as the administrator's shell. Many of the debug
 # CentOS Stream 9 (default)
 docker pull ghcr.io/pichuang/debug-container:master
 
-# Azure Linux 3.0 (Microsoft Supported)
+# Azure Linux 3.0
 docker pull ghcr.io/pichuang/debug-container:microsoft
 ```
 
@@ -93,7 +94,7 @@ aks-agentpool-40137516-vmss000001   Ready    agent   82m   v1.22.11
 aks-agentpool-40137516-vmss000002   Ready    agent   82m   v1.22.11
 
 # Run the command
-kubectl run -n default debug-container --restart=Never --rm -i --tty --overrides='{ "apiVersion": "v1", "spec": {"kubernetes.io/hostname":"aks-agentpool-40137516-vmss000002"}}' --image ghcr.io/pichuang/debug-container:master -- /bin/bash
+kubectl run -n default debug-container --restart=Never --rm -i --tty --overrides='{ "apiVersion": "v1", "spec": {"nodeSelector":{"kubernetes.io/hostname":"aks-agentpool-40137516-vmss000002"}}}' --image ghcr.io/pichuang/debug-container:master -- /bin/bash
 ```
 
 3. Node Level Debugging: Running one Pod on `specific node`
@@ -130,7 +131,7 @@ oc run ocp-debug-container --image ghcr.io/pichuang/debug-container:master \
 oc project <PROJECT NAME>
 oc run ocp-debug-container --image ghcr.io/pichuang/debug-container:master \
    --restart=Never --attach -i --tty --rm \
-   --overrides='{ "apiVersion": "v1", "spec": { "kubernetes.io/hostname":"compute-1"}}}'
+   --overrides='{ "apiVersion": "v1", "spec": { "nodeSelector":{"kubernetes.io/hostname":"compute-1"}}}'
 ```
 - Remind: Please replace `kubernetes.io/hostname:<hostname>`
 
@@ -146,7 +147,7 @@ oc run ocp-debug-container --image ghcr.io/pichuang/debug-container:master \
 4. Running Container Level Debugging
 ```bash
 oc project <PROJECT NAME>
-oc rsh pod/<PDO NAME>
+oc rsh pod/<POD NAME>
 ```
 
 5. Running Pods Level Debugging
@@ -196,7 +197,7 @@ spec:
 make build-docker
 ```
 
-- Azure Linux 3.0 (Microsoft Supported):
+- Azure Linux 3.0:
 ```bash
 make build-docker-microsoft
 ```
@@ -212,6 +213,13 @@ docker build -f Dockerfile-microsoft \
 ```bash
 make build-buildah
 ```
+
+Both Dockerfiles use multi-stage builds to exclude deadman's Git history from
+the final image. CI builds both variants for `linux/amd64` and `linux/arm64`.
+Publishing runs on pushes to `master`, version tags, and the weekly schedule;
+pull requests build without publishing. CentOS uses `master` / `latest` and
+dated `vYYYYMMDD` tags; Azure Linux uses `microsoft` / `microsoft-latest` and
+dated `vYYYYMMDD-microsoft` tags.
 
 ## Security
 
