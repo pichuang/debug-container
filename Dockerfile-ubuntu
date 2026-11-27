@@ -1,7 +1,8 @@
 # syntax=docker.io/docker/dockerfile-upstream:1.9.0
 # check=error=true
 
-FROM docker.io/library/ubuntu:24.04@sha256:562111b88caa79c71391c0c4d3c2114a7d5c35915c20561fd893cb1e07929e6b AS builder
+ARG BASE_IMAGE=docker.io/library/ubuntu:24.04@sha256:562111b88caa79c71391c0c4d3c2114a7d5c35915c20561fd893cb1e07929e6b
+FROM ${BASE_IMAGE} AS builder
 # hadolint ignore=DL3008
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates git && \
@@ -10,7 +11,7 @@ RUN git clone https://github.com/upa/deadman.git /tmp/deadman && \
     git -C /tmp/deadman checkout 4746fd6aae3625b44e19cb3cac566e0544c04dc9 && \
     rm -rf /tmp/deadman/.git
 
-FROM docker.io/library/ubuntu:24.04@sha256:562111b88caa79c71391c0c4d3c2114a7d5c35915c20561fd893cb1e07929e6b
+FROM ${BASE_IMAGE}
 LABEL org.opencontainers.image.title="Debug Container (Ubuntu)" \
       org.opencontainers.image.source="https://github.com/pichuang/debug-container" \
       org.opencontainers.image.description="Container troubleshooting tools on Ubuntu 24.04 LTS" \

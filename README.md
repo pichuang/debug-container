@@ -240,8 +240,10 @@ make build-buildah
 
 All Dockerfiles use multi-stage builds to exclude deadman's Git history from
 the final image. CI builds and runs each variant on native `amd64` and `arm64`
-runners before publishing. Publishing runs on pushes to `master`, version tags,
-and the weekly schedule; pull requests verify without publishing.
+runners before publishing. Pull requests and pushes to `master` verify without
+publishing. Every other Sunday at 19:30 UTC, the release workflow resolves fresh
+base image digests, rebuilds every variant without the layer cache, tests both
+architectures, and promotes signed images to their official tags.
 CentOS uses `master` / `latest` and
 dated `vYYYYMMDD` tags; Azure Linux uses `microsoft` / `microsoft-latest` and
 dated `vYYYYMMDD-microsoft` tags. Ubuntu uses `ubuntu` / `ubuntu-latest` and
@@ -251,9 +253,12 @@ dated `vYYYYMMDD-ubuntu` tags. Azure Linux 4 uses `azurelinux4` /
 Push a `test-publish/*` branch to run the same checks and publish signed
 `test-<run-id>-<attempt>-<variant>` tags
 without updating any stable tags.
-To publish the regular tags from a selected ref, manually run the Docker
-workflow with `publish_stable=true`. It reruns all eight architecture checks
-before publishing. A manual run without that option publishes only test tags.
+Each [GitHub Release](https://github.com/pichuang/debug-container/releases)
+contains English change notes, pull references, and an `images.json` attachment
+with the exact base and published digests. To publish outside the schedule,
+manually run the Docker workflow on `master` with `publish_stable=true`. A
+manual run without that option publishes only test tags and previews the
+release notes. A published daily release tag is never overwritten.
 
 To build for a specific architecture locally, use Docker Buildx. For example, on
 an ARM64 host with x86-64 emulation enabled:
