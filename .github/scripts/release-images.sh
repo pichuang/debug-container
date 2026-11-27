@@ -53,7 +53,13 @@ jq . <<< "$manifest" > "$tmp/images.json"
             printf '```\n\n'
         fi
     else
-        printf '%s\n\n' 'First GitHub Release under the biweekly image workflow. It establishes a baseline for CentOS Stream 9, Azure Linux 3.0, Ubuntu 24.04 LTS, and Azure Linux 4. No prior release is available for comparison.'
+        printf '%s\n' \
+            '- Adds Ubuntu 24.04 LTS and Azure Linux 4 alongside CentOS Stream 9 and Azure Linux 3.0.' \
+            '- Keeps the existing CentOS and Azure Linux 3.0 aliases unchanged.' \
+            '- Starts biweekly rebuilds from refreshed upstream bases and records the signed image digests in `images.json`.' \
+            '' \
+            'This is the first GitHub Release; there is no previous release to compare against.' \
+            ''
     fi
     printf 'Source commit: `%s`. All four images were rebuilt without the layer cache; AMD64 and ARM64 build and smoke checks passed.\n\n' "$GITHUB_SHA"
     printf '## Image changes and pull references\n\n'
